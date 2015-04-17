@@ -1,25 +1,19 @@
 package genderclassification;
 
 import genderclassification.domain.Category;
-import genderclassification.domain.Gender;
-import genderclassification.model.ClassifiedUser;
 import genderclassification.model.GenderProbabilities;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map.Entry;
 
-import org.apache.crunch.Aggregator;
 import org.apache.crunch.CombineFn;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
-import org.apache.crunch.PGroupedTable;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.fn.Aggregators;
@@ -27,12 +21,8 @@ import org.apache.crunch.fn.IdentityFn;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
 import org.apache.crunch.lib.join.JoinType;
 import org.apache.crunch.types.PTableType;
-import org.apache.crunch.types.PType;
 import org.apache.crunch.types.avro.AvroType;
 import org.apache.crunch.types.avro.Avros;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
 
 public class Classify implements Serializable {
 
@@ -100,7 +90,7 @@ public class Classify implements Serializable {
         }
     };
 
-    public static PCollection classifyUsers(final PCollection<String> userProductLines,
+    public static PTable<String, Collection<Double>> classifyUsers(final PCollection<String> userProductLines,
             final PCollection<String> userGenderLines, final PCollection<String> productCategoryLines) {
         final PTable<String, String> productToUser = userProductLines.parallelDo(parseUserProductLine, STRING_TABLE);
         final PTable<String, String> productToCategory = productCategoryLines.parallelDo(parseProductCategoryLine,

@@ -2,18 +2,17 @@ package genderclassification;
 
 import genderclassification.initialize.AbstractPipelineAdapter;
 import genderclassification.initialize.MemPipelineAdapter;
-import genderclassification.model.ClassifiedUser;
-import genderclassification.model.GenderProbabilities;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.PCollection;
-import org.apache.crunch.Pair;
+import org.apache.crunch.PTable;
 import org.apache.crunch.Pipeline;
 
 import com.google.common.base.Preconditions;
@@ -44,8 +43,8 @@ public class Main implements Serializable {
         final PCollection<String> userGenderLines = pipeline.readTextFile(INPUT_USER_GENDER_FILE);
         final PCollection<String> productCategoryLines = pipeline.readTextFile(INPUT_PRODUCT_CATEGORY_FILE);
 
-        final PCollection bestMoveCollection = Classify.classifyUsers(userProductLines,
-                userGenderLines, productCategoryLines);
+        final PTable<String, Collection<Double>> bestMoveCollection = Classify.classifyUsers(
+        		userProductLines, userGenderLines, productCategoryLines);
         pipeline.writeTextFile(bestMoveCollection, outputFolder.getAbsolutePath());
         pipeline.done();
 
