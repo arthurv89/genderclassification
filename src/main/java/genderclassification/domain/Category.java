@@ -7,9 +7,30 @@ import java.util.Map;
 
 public class Category {
     private static final List<String> categories = Arrays.asList(
+<<<<<<< HEAD
         "BEAUTY",
         "ELECTRONICS",
         "BOOKS");
+=======
+		"Boeken",
+		"Muziek",
+		"Dvd",
+		"categorieen",
+		"Computer",
+		"Games",
+		"Speelgoed",
+		"Baby",
+		"Elektronica",
+		"Koken, Tafelen en Huishouden",
+		"Mooi & Gezond",
+		"Klussen",
+		"Sport & Vrije tijd",
+		"Wonen",
+		"Dieren",
+		"Tuin",
+		"Tassen & Lederwaren",
+		"Horloges & Accessoires");
+>>>>>>> Cleanup
     
     private static final Map<String, Integer> categoryOrder = convertCategories();
     

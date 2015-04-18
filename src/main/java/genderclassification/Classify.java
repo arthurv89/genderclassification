@@ -171,6 +171,10 @@ public class Classify implements Serializable {
 				.values()
 				// (U,C)
 				.parallelDo(IDENTITY, STRING_TO_STRING_TABLE_TYPE);
+		
+//		print(productToUser, "productToUser");
+//		print(productToCategory, "productToCategory");
+//		print(userToCategory, "userToCategory");
 
 		PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
 				// (U,G)  JOIN  (U,C) = (U,(G,C))
