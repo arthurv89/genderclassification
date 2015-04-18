@@ -3,7 +3,6 @@ package genderclassification;
 import genderclassification.domain.Category;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -92,9 +91,9 @@ public class Classify implements Serializable {
 		}
 
 		private Pair<Pair<String, String>, Double> pair(final Gender gender, final String category, final String[] probabilityPerGender) {
-			Pair<String, String> categoryAndGender = new Pair<>(category, gender.name());
-			Double probability = Double.parseDouble(probabilityPerGender[gender.position]);
-			return new Pair<Pair<String, String>, Double>(categoryAndGender, probability);
+			final Pair<String, String> genderAndCategory = new Pair<>(gender.name(), category);
+			final Double probability = Double.parseDouble(probabilityPerGender[gender.position]);
+			return new Pair<Pair<String, String>, Double>(genderAndCategory, probability);
 		}
 	};
 
@@ -103,8 +102,8 @@ public class Classify implements Serializable {
 
 		@Override
 		public void process(final Pair<Pair<String, String>, Double> input, final Emitter<Pair<String, Collection<Double>>> emitter) {
-			final String category = input.first().first();
-			final String gender = input.first().second();
+			final String gender = input.first().first();
+			final String category = input.first().second();
 			final Double frequency = input.second();
 
 			final List<Double> frequencies = createCollection(new Pair<>(Category.getIndex(category), frequency));
@@ -115,9 +114,9 @@ public class Classify implements Serializable {
 			final Integer categoryIndex = categoryIndex_FrequencyPair.first();
 			final Double probability = categoryIndex_FrequencyPair.second();
 
-			final Double frequency[] = new Double[CATEGORY_COUNT];
+			final double frequency[] = new double[CATEGORY_COUNT];
 			frequency[categoryIndex] = probability;
-			return Arrays.asList(frequency);
+			return Doubles.asList(frequency);
 		}
 	};
 
@@ -165,7 +164,7 @@ public class Classify implements Serializable {
 //		print(productToCategory, "productToCategory");
 //		print(userToCategory, "userToCategory");
 
-		PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
+		final PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
 				// (U,G)  JOIN  (U,C) = (U,(G,C))
 				.join(userToGender, userToCategory, JoinType.INNER_JOIN);
 
@@ -202,9 +201,9 @@ public class Classify implements Serializable {
 	private enum Gender {
 		M(0), F(1), U(2);
 		
-		private int position;
+		private final int position;
 
-		private Gender(int position) {
+		private Gender(final int position) {
 			this.position = position;
 		}
 	}
