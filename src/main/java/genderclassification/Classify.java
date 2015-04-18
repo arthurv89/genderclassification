@@ -25,17 +25,6 @@ import org.apache.crunch.types.avro.Avros;
 import com.google.common.primitives.Doubles;
 
 public class Classify implements Serializable {
-
-	private enum Gender {
-		M(0), F(1), U(2);
-		
-		private int position;
-
-		private Gender(int position) {
-			this.position = position;
-		}
-	}
-
 	private static final int CATEGORY_COUNT = Category.countCategories();
 
 	private static final long serialVersionUID = -6683089099880990848L;
@@ -208,5 +197,15 @@ public class Classify implements Serializable {
 			System.out.println(r);
 		});
 		System.out.println("\n\n");
+	}
+
+	private enum Gender {
+		M(0), F(1), U(2);
+		
+		private int position;
+
+		private Gender(int position) {
+			this.position = position;
+		}
 	}
 }
