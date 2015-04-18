@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 public class Category {
-    private final static List<String> categories = Arrays.asList(
+    private static final List<String> categories = Arrays.asList(
         "BEAUTY",
         "ELECTRONICS",
         "BOOKS");
     
-    public final static Map<String, Integer> categoryOrder = convertCategories();
+    private static final Map<String, Integer> categoryOrder = convertCategories();
     
     private static Map<String, Integer> convertCategories() {
         final HashMap<String, Integer> map = new HashMap<String, Integer>();
@@ -21,4 +21,13 @@ public class Category {
         }
         return map;
     }
+    
+    public static int getIndex(String category) {
+    	int idx = categoryOrder.get(category);
+    	return idx;
+    }
+
+	public static int countCategories() {
+		return categoryOrder.size();
+	}
 }

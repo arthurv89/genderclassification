@@ -1,4 +1,4 @@
-package genderclassification.initialize;
+package genderclassification.pipeline;
 
 import java.io.File;
 import java.io.IOException;

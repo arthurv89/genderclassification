@@ -1,7 +1,7 @@
 package genderclassification;
 
-import genderclassification.initialize.AbstractPipelineAdapter;
-import genderclassification.initialize.MemPipelineAdapter;
+import genderclassification.pipeline.AbstractPipelineAdapter;
+import genderclassification.pipeline.MemPipelineAdapter;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,9 +20,9 @@ import com.google.common.base.Preconditions;
 public class Main implements Serializable {
     private static final long serialVersionUID = 540472578017394764L;
 
-    private static final String INPUT_USER_PRODUCT_FILE = "input/user-product.txt";
-    private static final String INPUT_USER_GENDER_FILE = "input/user-gender.txt";
-    private static final String INPUT_PRODUCT_CATEGORY_FILE = "input/product-category.txt";
+    private static final String INPUT_USER_PRODUCT_FILE = "input/db_userId_productId.txt";
+    private static final String INPUT_USER_GENDER_FILE = "input/db_userId_gender.txt";
+    private static final String INPUT_PRODUCT_CATEGORY_FILE = "input/db_productId_category.txt";
     private static final String OUTPUT_FOLDER = "output";
 
     static {
@@ -39,12 +39,7 @@ public class Main implements Serializable {
         final Pipeline pipeline = pipelineAdapter.getPipeline();
         pipeline.enableDebug();
 
-        final PCollection<String> userProductLines = pipeline.readTextFile(INPUT_USER_PRODUCT_FILE);
-        final PCollection<String> userGenderLines = pipeline.readTextFile(INPUT_USER_GENDER_FILE);
-        final PCollection<String> productCategoryLines = pipeline.readTextFile(INPUT_PRODUCT_CATEGORY_FILE);
-
-        final PTable<String, Collection<Double>> bestMoveCollection = Classify.classifyUsers(
-        		userProductLines, userGenderLines, productCategoryLines);
+        final PTable<String, Collection<Double>> bestMoveCollection = execute(pipeline);
         pipeline.writeTextFile(bestMoveCollection, outputFolder.getAbsolutePath());
         pipeline.done();
 
@@ -55,9 +50,19 @@ public class Main implements Serializable {
         return result;
     }
 
+	private static PTable<String, Collection<Double>> execute(final Pipeline pipeline) {
+		final PCollection<String> userProductLines = pipeline.readTextFile(INPUT_USER_PRODUCT_FILE);
+        final PCollection<String> userGenderLines = pipeline.readTextFile(INPUT_USER_GENDER_FILE);
+        final PCollection<String> productCategoryLines = pipeline.readTextFile(INPUT_PRODUCT_CATEGORY_FILE);
+
+        return Classify.determineModel(userProductLines, userGenderLines, productCategoryLines);
+	}
+
     public static void main(final String[] args) throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final List<String> result = performPipeline(adapter);
+        System.out.println();
+        System.out.println("The results:");
         System.out.println(result);
     }
 }

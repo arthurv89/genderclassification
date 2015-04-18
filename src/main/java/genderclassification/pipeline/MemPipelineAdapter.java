@@ -1,4 +1,4 @@
-package genderclassification.initialize;
+package genderclassification.pipeline;
 
 import org.apache.crunch.Pipeline;
 import org.apache.crunch.impl.mem.MemPipeline;
