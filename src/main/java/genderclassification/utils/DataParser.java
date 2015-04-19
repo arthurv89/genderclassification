@@ -11,22 +11,35 @@ import org.apache.crunch.Pipeline;
 import com.google.common.base.Preconditions;
 
 public class DataParser {
-    private static final String INPUT_USER_PRODUCT_FILE = "input/userId_productId.txt";
-    private static final String INPUT_USER_GENDER_FILE = "input/userId_gender.txt";
-    private static final String INPUT_PRODUCT_CATEGORY_FILE = "input/productId_category.txt";
+    public static final File OUTPUT_FOLDER = new File("output/");
+    public static final String OUTPUT_FOLDER_CLASSIFY = "output/classify/";
+    public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
+
+    private static final String INPUT_FILE_USER_PRODUCT = "input/userId_productId.txt";
+    private static final String INPUT_FILE_USER_GENDER = "input/userId_gender.txt";
+    private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/productId_category.txt";
+    private static final String INPUT_FILE_CLASSIFIED_USERS = "output/classify/out1.txt";
+    
     static {
         {
-            Preconditions.checkArgument(new File(DataParser.INPUT_USER_PRODUCT_FILE).exists());
-            Preconditions.checkArgument(new File(DataParser.INPUT_USER_GENDER_FILE).exists());
-            Preconditions.checkArgument(new File(DataParser.INPUT_PRODUCT_CATEGORY_FILE).exists());
+            Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_PRODUCT).exists());
+            Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_GENDER).exists());
+            Preconditions.checkArgument(new File(DataParser.INPUT_FILE_PRODUCT_CATEGORY).exists());
         }
     }
 
 
-    public static final PCollection<String> userProductData(Pipeline pipeline) { return pipeline.readTextFile(INPUT_USER_PRODUCT_FILE); };
-    public static final PCollection<String> userGenderData(Pipeline pipeline) { return pipeline.readTextFile(INPUT_USER_GENDER_FILE); };
-    public static final PCollection<String> productCategoryData(Pipeline pipeline) { return pipeline.readTextFile(INPUT_PRODUCT_CATEGORY_FILE); }
-    
+    public static final PCollection<String> userProductData(final Pipeline pipeline) { return pipeline.readTextFile(INPUT_FILE_USER_PRODUCT); };
+    public static final PCollection<String> userGenderData(final Pipeline pipeline) { return pipeline.readTextFile(INPUT_FILE_USER_GENDER); };
+    public static final PCollection<String> productCategoryData(final Pipeline pipeline) { return pipeline.readTextFile(INPUT_FILE_PRODUCT_CATEGORY); }
+	public static final PCollection<String> classifiedUsers(final Pipeline pipeline) {
+		try {
+			return pipeline.readTextFile(OUTPUT_FOLDER_CLASSIFY);
+		} catch(Exception e) {
+			return pipeline.emptyPCollection(DataTypes.STRING_TYPE);
+		}
+	}
+	
 	public final static PTable<String, String> productUser(final PCollection<String> userProductLines) {
 		// (P,U)
 		return userProductLines.parallelDo(new MapFn<String, Pair<String, String>>() {
@@ -83,6 +96,20 @@ public class DataParser {
 				final String userId = values[0];
 				final String productId = values[1];
 				return new Pair<String, String>(userId, productId);
+			}
+		}, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+	}
+	public static PTable<String, String> classifiedUserGender(final PCollection<String> classifiedUserLines) {
+		// (U,G)
+		return classifiedUserLines.parallelDo(new MapFn<String, Pair<String, String>>() {
+			private static final long serialVersionUID = 532879173812973289L;
+
+			@Override
+			public Pair<String, String> map(final String line) {
+				final String[] values = line.split("\t");
+				final String userId = values[0];
+				final String probabilities = values[1];
+				return new Pair<String, String>(userId, probabilities);
 			}
 		}, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 	}

@@ -1,6 +1,5 @@
 package genderclassification.classify;
 
-import genderclassification.createmodel.Main_Model;
 import genderclassification.domain.Model;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
@@ -18,14 +17,10 @@ import org.apache.crunch.Pair;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-public class Main_Classify {
-	private static File INPUT_FOLDER_MODEL = Main_Model.OUTPUT_FOLDER_MODEL;
-	public static final File OUTPUT_FOLDER = new File("output/");
-    public static final File OUTPUT_FOLDER_CLASSIFY = new File("output/classify/");
-
-	public static void main(final String[] args) throws IOException {
+public class ClassifyJob {
+	public static void runJob() throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
-		final List<String> lines = adapter.parseResult(INPUT_FOLDER_MODEL);
+		final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 		
 		final Model model = createModel(lines);
         
@@ -36,7 +31,7 @@ public class Main_Classify {
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
 
 			return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
-        }, OUTPUT_FOLDER);
+        }, DataParser.OUTPUT_FOLDER);
         
         cleanupFiles(outputFolder);
         
@@ -44,12 +39,12 @@ public class Main_Classify {
     }
 
 	private static void cleanupFiles(final File outputFolder) throws IOException {
-		FileUtils.deleteDirectory(OUTPUT_FOLDER_CLASSIFY);
-		FileUtils.moveDirectory(outputFolder, OUTPUT_FOLDER_CLASSIFY);
+		FileUtils.deleteDirectory(new File(DataParser.OUTPUT_FOLDER_CLASSIFY));
+		FileUtils.moveDirectory(outputFolder, new File(DataParser.OUTPUT_FOLDER_CLASSIFY));
 	}
 
 	private static void printResults(final AbstractPipelineAdapter adapter) throws IOException {
-		final List<String> classifiedUsers = adapter.parseResult(OUTPUT_FOLDER_CLASSIFY);
+		final List<String> classifiedUsers = adapter.parseResult(new File(DataParser.OUTPUT_FOLDER_CLASSIFY));
 
 		System.out.println();
         System.out.println();

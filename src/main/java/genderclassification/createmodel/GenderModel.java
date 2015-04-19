@@ -22,11 +22,12 @@ import org.apache.crunch.lib.join.JoinType;
 import com.google.common.primitives.Doubles;
 
 public class GenderModel implements Serializable {
-	public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines, final PCollection<String> userGenderLines, final PCollection<String> productCategoryLines) {
+	public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines, final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines, final PCollection<String> productCategoryLines) {
 		// Parse the data files
 		PTable<String, String> productToUser = DataParser.productUser(userProductLines);
 		PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
 		PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
+		PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
 		
 		final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
 				// (P,U)*  JOIN  (P,C) = (P, (U,C))* 
@@ -39,10 +40,12 @@ public class GenderModel implements Serializable {
 //		print(productToUser, "productToUser");
 //		print(productToCategory, "productToCategory");
 //		print(userToCategory, "userToCategory");
+		
+		PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
 
 		final PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
 				// (U,G)  JOIN  (U,C) = (U,(G,C))
-				.join(userToGender, userToCategory, JoinType.INNER_JOIN);
+				.join(allUsersToGender, userToCategory, JoinType.INNER_JOIN);
 
 //		print(userToGender, "userToGender");
 //		print(userToCategory, "userToCategory");

@@ -11,21 +11,22 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.PCollection;
 
-public class Main_Model implements Serializable {
+public class ModelJob implements Serializable {
 	private static final long serialVersionUID = 540472578017394764L;
-
+	
     public static final File OUTPUT_FOLDER = new File("output/");
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
-    public static void main(final String[] args) throws IOException {
+    public static void runJob() throws IOException {
         final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
 		final File outputFolder = adapter.performPipeline(pipeline -> {
     		final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
+            final PCollection<String> classifiedUsers = DataParser.classifiedUsers(pipeline);
 
             // (G, [freq])
-            return GenderModel.determineModel(userProductLines, userGenderLines, productCategoryLines);
+            return GenderModel.determineModel(userProductLines, userGenderLines, classifiedUsers, productCategoryLines);
     	}, OUTPUT_FOLDER);
         
         cleanupFiles(outputFolder);
