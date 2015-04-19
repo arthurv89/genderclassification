@@ -11,9 +11,9 @@ import org.apache.crunch.Pipeline;
 import com.google.common.base.Preconditions;
 
 public class DataParser {
-    private static final String INPUT_USER_PRODUCT_FILE = "input/db_userId_productId.txt";
-    private static final String INPUT_USER_GENDER_FILE = "input/db_userId_gender.txt";
-    private static final String INPUT_PRODUCT_CATEGORY_FILE = "input/db_productId_category.txt";
+    private static final String INPUT_USER_PRODUCT_FILE = "input/userId_productId.txt";
+    private static final String INPUT_USER_GENDER_FILE = "input/userId_gender.txt";
+    private static final String INPUT_PRODUCT_CATEGORY_FILE = "input/productId_category.txt";
     static {
         {
             Preconditions.checkArgument(new File(DataParser.INPUT_USER_PRODUCT_FILE).exists());
