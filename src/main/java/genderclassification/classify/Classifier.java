@@ -37,15 +37,13 @@ public class Classifier {
 		// (P,C)
 		final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
 		
-		final PTable<String, String> undefinedUsersToProduct = new DefaultJoinStrategy<String, String, String>()
-			// (U,P)*  JOIN  (U,G) = (U,(P,G))*
+		final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
+			// (U,P)  JOIN  (U,G) = (U,(P,G+null))
 			.join(userToProduct, userToGender, JoinType.LEFT_OUTER_JOIN)
 			// (U,(P,null))
 			.filter(nullGender)
 			// (U,P)
-			.parallelDo(toProduct, DataTypes.STRING_TO_STRING_TABLE_TYPE);
-		
-		final PTable<String, String> productToUser = undefinedUsersToProduct
+			.parallelDo(convertToUser_product, DataTypes.STRING_TO_STRING_TABLE_TYPE)
 			// (P,U)
 			.parallelDo(inverse, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 		
@@ -73,7 +71,7 @@ public class Classifier {
 		}
 	};
 	
-	private static DoFn<Pair<String,Pair<String,String>>,Pair<String,String>> toProduct = new DoFn<Pair<String,Pair<String,String>>,Pair<String,String>>() {
+	private static DoFn<Pair<String,Pair<String,String>>,Pair<String,String>> convertToUser_product = new DoFn<Pair<String,Pair<String,String>>,Pair<String,String>>() {
 		private static final long serialVersionUID = 5901533239721780409L;
 
 		@Override
