@@ -1,6 +1,6 @@
 package genderclassification.pipeline;
 
-import genderclassification.Classify;
+import genderclassification.createmodel.GenderModel;
 
 import org.apache.crunch.Pipeline;
 import org.apache.crunch.impl.mr.MRPipeline;
@@ -15,6 +15,6 @@ public class MRPipelineAdapter extends AbstractPipelineAdapter {
 	}
 	
 	public static MRPipelineAdapter getInstance() {
-		return new MRPipelineAdapter(new MRPipeline(Classify.class));
+		return new MRPipelineAdapter(new MRPipeline(GenderModel.class));
 	}
 }

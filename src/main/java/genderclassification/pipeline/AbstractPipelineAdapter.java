@@ -7,10 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.crunch.PTable;
 import org.apache.crunch.Pipeline;
 
+import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 
 public abstract class AbstractPipelineAdapter {
@@ -34,6 +37,19 @@ public abstract class AbstractPipelineAdapter {
             list.addAll(u);
             return list;
         });
+    }
+
+
+    public <K,V> File performPipeline(final Function<Pipeline, PTable<K, V>> execute, File outputFolder) throws IOException {
+        final File outputFile = new File(outputFolder, UUID.randomUUID().toString());
+
+        pipeline.enableDebug();
+
+        final PTable<K, V> result = execute.apply(pipeline);
+        pipeline.writeTextFile(result, outputFile.getAbsolutePath());
+        pipeline.done();
+        
+        return outputFile;
     }
 
     public Pipeline getPipeline() {

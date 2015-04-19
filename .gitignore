@@ -1,4 +1,6 @@
-/target/
-.classpath
 .project
+.classpath
+target/
 .settings/
+/classify/
+/model/
