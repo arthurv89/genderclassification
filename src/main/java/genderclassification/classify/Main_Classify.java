@@ -20,8 +20,8 @@ import com.google.common.collect.Lists;
 
 public class Main_Classify {
 	private static File INPUT_FOLDER_MODEL = Main_Model.OUTPUT_FOLDER_MODEL;
-	public static final File OUTPUT_FOLDER = new File("output");
-    public static final File OUTPUT_FOLDER_CLASSIFY = new File("output/classify");
+	public static final File OUTPUT_FOLDER = new File("output/");
+    public static final File OUTPUT_FOLDER_CLASSIFY = new File("output/classify/");
 
 	public static void main(final String[] args) throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();

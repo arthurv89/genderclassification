@@ -14,8 +14,8 @@ import org.apache.crunch.PCollection;
 public class Main_Model implements Serializable {
 	private static final long serialVersionUID = 540472578017394764L;
 
-    public static final File OUTPUT_FOLDER = new File("output");
-    public static final File OUTPUT_FOLDER_MODEL = new File("output/model");
+    public static final File OUTPUT_FOLDER = new File("output/");
+    public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
     public static void main(final String[] args) throws IOException {
         final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();

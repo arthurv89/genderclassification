@@ -2,5 +2,5 @@
 .classpath
 target/
 .settings/
-/classify/
-/model/
+/output/classify/
+/output/model/
