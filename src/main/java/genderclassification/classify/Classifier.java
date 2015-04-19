@@ -98,13 +98,14 @@ public class Classifier {
 			
 			final double sum = maleDistance + femaleDistance + unknownDistance;
 			
-			return new StringBuilder()
+			String probabilities = new StringBuilder()
 				.append(maleDistance/sum)
 				.append(' ')
 				.append(femaleDistance/sum)
 				.append(' ')
 				.append(unknownDistance/sum)
 				.toString();
+			return probabilities;
 		}
 
 		private double cosineDistance(final String gender, final double[] categoryVector) {

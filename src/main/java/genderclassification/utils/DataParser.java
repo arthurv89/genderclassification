@@ -18,7 +18,6 @@ public class DataParser {
     private static final String INPUT_FILE_USER_PRODUCT = "input/userId_productId.txt";
     private static final String INPUT_FILE_USER_GENDER = "input/userId_gender.txt";
     private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/productId_category.txt";
-    private static final String INPUT_FILE_CLASSIFIED_USERS = "output/classify/out1.txt";
     
     static {
         {

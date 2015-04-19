@@ -49,10 +49,17 @@ public class ClassifyJob {
 		System.out.println();
         System.out.println();
         System.out.println("The classification:");
-        classifiedUsers.forEach(s -> System.out.println(s));
+		classifiedUsers.forEach(line -> {
+			final String[] x = line.split("\\s");
+			System.out.print(x[0] + "\t");
+			System.out.print(Math.round(100*Double.parseDouble(x[1])) + "%\t");
+			System.out.print(Math.round(100*Double.parseDouble(x[2])) + "%\t");
+			System.out.print(Math.round(100*Double.parseDouble(x[3])) + "%");
+			System.out.println();
+		});
 	}
 
-	private static Model createModel(final List<String> lines) {
+	public static Model createModel(final List<String> lines) {
 		final Pair<String, List<Double>> g1 = split(lines.get(0));
 		final Pair<String, List<Double>> g2 = split(lines.get(1));
 		final Pair<String, List<Double>> g3 = split(lines.get(2));

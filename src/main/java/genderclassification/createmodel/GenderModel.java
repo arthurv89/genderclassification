@@ -24,10 +24,10 @@ import com.google.common.primitives.Doubles;
 public class GenderModel implements Serializable {
 	public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines, final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines, final PCollection<String> productCategoryLines) {
 		// Parse the data files
-		PTable<String, String> productToUser = DataParser.productUser(userProductLines);
-		PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
-		PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
-		PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
+		final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
+		final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
+		final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
+		final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
 		
 		final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
 				// (P,U)*  JOIN  (P,C) = (P, (U,C))* 
@@ -39,9 +39,9 @@ public class GenderModel implements Serializable {
 		
 //		print(productToUser, "productToUser");
 //		print(productToCategory, "productToCategory");
-//		print(userToCategory, "userToCategory");
+//		System.out.println(userToCategory);
 		
-		PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
+		final PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
 
 		final PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
 				// (U,G)  JOIN  (U,C) = (U,(G,C))
@@ -49,7 +49,7 @@ public class GenderModel implements Serializable {
 
 //		print(userToGender, "userToGender");
 //		print(userToCategory, "userToCategory");
-//		print(join, "join");
+//		System.out.println(join);
 		
 		return join
 				// (G,C)
@@ -126,12 +126,11 @@ public class GenderModel implements Serializable {
 			final Iterable<Collection<Double>> frequenciesIterable = input.second();
 
 			final double[] sum = new double[CATEGORY_COUNT];
-			int idx = 0;
 			for (final Collection<Double> frequencies : frequenciesIterable) {
-				for (final Double frequency : frequencies) {
-					sum[idx] += frequency;
+				final List<Double> frequencyList = (List<Double>) frequencies;
+				for (int idx = 0; idx < frequencyList.size(); idx++) {
+					sum[idx] += frequencyList.get(idx);
 				}
-				idx++;
 			}
 			
 			emitter.emit(new Pair<String, Collection<Double>>(gender, Doubles.asList(sum)));

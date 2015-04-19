@@ -1,5 +1,7 @@
 package genderclassification.createmodel;
 
+import genderclassification.classify.ClassifyJob;
+import genderclassification.domain.Model;
 import genderclassification.pipeline.MemPipelineAdapter;
 import genderclassification.utils.DataParser;
 
@@ -18,6 +20,8 @@ public class ModelJob implements Serializable {
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
     public static void runJob() throws IOException {
+		FileUtils.deleteDirectory(OUTPUT_FOLDER_MODEL);
+		
         final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
 		final File outputFolder = adapter.performPipeline(pipeline -> {
     		final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
@@ -45,6 +49,19 @@ public class ModelJob implements Serializable {
         System.out.println();
         System.out.println();
         System.out.println("The model:");
-        lines.forEach(s -> System.out.println(s));
+        final Model model = ClassifyJob.createModel(lines);
+        printGender(model, "F");
+        printGender(model, "M");
+	}
+
+	private static void printGender(final Model model, final String gender) {
+		final double sum = model.get(gender).stream().mapToDouble(x -> x).sum();
+		
+		System.out.print(gender + "\t");
+        model.get(gender).forEach(d -> {
+        	long freq = Math.round(d/sum*100);
+        	System.out.print(freq + "%,\t");
+        });
+        System.out.println();
 	}
 }
