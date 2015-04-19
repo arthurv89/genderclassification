@@ -156,15 +156,4 @@ public class Classifier {
 		}
 		return Math.sqrt(length);
 	}
-
-
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static void print(final PTable table, final String name) {
-		System.out.println("Printing table " + name + ":");
-		table.materialize().forEach(r -> {
-			System.out.println(r);
-		});
-		System.out.println("\n\n");
-	}
 }

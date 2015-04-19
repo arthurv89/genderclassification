@@ -119,7 +119,7 @@ public class GenderModel implements Serializable {
 
 		@Override
 		public void process(final Pair<String, Iterable<Collection<Double>>> input, final Emitter<Pair<String, Collection<Double>>> emitter) {
-			final String category = input.first();
+			final String gender = input.first();
 			final Iterable<Collection<Double>> frequenciesIterable = input.second();
 
 			final double[] sum = new double[CATEGORY_COUNT];
@@ -131,7 +131,7 @@ public class GenderModel implements Serializable {
 				idx++;
 			}
 			
-			emitter.emit(new Pair<String, Collection<Double>>(category, Doubles.asList(sum)));
+			emitter.emit(new Pair<String, Collection<Double>>(gender, Doubles.asList(sum)));
 		}
 	};
 

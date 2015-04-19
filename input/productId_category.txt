@@ -1,3 +1,3 @@
-PA	BOOKS
-PB	BOOKS
-PC	ELECTRONICS
+PA	Boeken
+PB	Boeken
+PC	Elektronica
