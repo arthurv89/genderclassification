@@ -15,9 +15,9 @@ public class DataParser {
     public static final String OUTPUT_FOLDER_CLASSIFY = "output/classify/";
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
-    private static final String INPUT_FILE_USER_PRODUCT = "input/new_userId_productId.txt";
+    private static final String INPUT_FILE_USER_PRODUCT = "input/user_product_add_2.txt";
     private static final String INPUT_FILE_USER_GENDER = "input/new_userId_gender.txt";
-    private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/new_productId_category.txt";
+    private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/product_to_category_lv2.txt";
 
     static {
         {

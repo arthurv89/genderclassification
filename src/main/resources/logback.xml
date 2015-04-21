@@ -8,7 +8,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="demo" level="WARN" />
+	<logger name="genderclassification" level="INFO" />
 
 	<root level="ERROR">
 		<appender-ref ref="CONSOLE" />

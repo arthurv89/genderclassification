@@ -1,6 +1,6 @@
 package genderclassification.createmodel;
 
-import genderclassification.domain.Category;
+import genderclassification.domain.CategoryOrder;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
 import genderclassification.utils.Mappers;
@@ -72,7 +72,7 @@ public class GenderModel implements Serializable {
 
     private static final long serialVersionUID = -6683089099880990848L;
 
-    private static final int CATEGORY_COUNT = Category.countCategories();
+    private static final int CATEGORY_COUNT = CategoryOrder.countCategories();
 
     private static final DoFn<Pair<String, String>, Pair<Pair<String, String>, Double>> toGenderAndCategoryPair_probability = new DoFn<Pair<String, String>, Pair<Pair<String, String>, Double>>() {
         private static final long serialVersionUID = 124672868421678412L;
@@ -107,7 +107,7 @@ public class GenderModel implements Serializable {
             final String category = input.first().second();
             final Double frequency = input.second();
 
-            final List<Double> frequencies = createCollection(new Pair<>(Category.getIndex(category), frequency));
+            final List<Double> frequencies = createCollection(new Pair<>(CategoryOrder.getIndex(category), frequency));
             emitter.emit(new Pair<String, Collection<Double>>(gender, frequencies));
         }
 

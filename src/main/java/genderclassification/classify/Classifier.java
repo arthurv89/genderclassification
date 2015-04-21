@@ -1,6 +1,6 @@
 package genderclassification.classify;
 
-import genderclassification.domain.Category;
+import genderclassification.domain.CategoryOrder;
 import genderclassification.domain.Model;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
@@ -61,7 +61,7 @@ public class Classifier {
                 .mapValues(classify, DataTypes.STRING_TYPE);
     }
 
-    private static final int CATEGORY_COUNT = Category.countCategories();
+    private static final int CATEGORY_COUNT = CategoryOrder.countCategories();
 
     private static FilterFn<Pair<String, Pair<String, String>>> nullGender = new FilterFn<Pair<String, Pair<String, String>>>() {
         private static final long serialVersionUID = -4777324870934777661L;
@@ -89,7 +89,7 @@ public class Classifier {
         public String map(final Iterable<String> categories) {
             final double[] categoryVector = new double[CATEGORY_COUNT];
             for (final String category : categories) {
-                final int idx = Category.getIndex(category);
+                final int idx = CategoryOrder.getIndex(category);
                 categoryVector[idx] += 1;
             }
 

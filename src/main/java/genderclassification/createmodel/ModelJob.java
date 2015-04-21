@@ -51,8 +51,8 @@ public class ModelJob implements Serializable {
         System.out.println();
         System.out.println("The model:");
         final Model model = ClassifyJob.createModel(lines);
-        printGender(model, "F");
         printGender(model, "M");
+        printGender(model, "F");
     }
 
     private static void printGender(final Model model, final String gender) {
