@@ -19,6 +19,22 @@ public class ModelJob implements Serializable {
     public static final File OUTPUT_FOLDER = new File("output/");
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
+    public static void runJobNaiveBayes() throws IOException {
+        FileUtils.deleteDirectory(OUTPUT_FOLDER_MODEL);
+
+        final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
+        final File outputFolder = adapter.performPipeline(pipeline -> {
+            final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
+            final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
+            final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
+
+            // (G, [freq])
+                return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines);
+            }, OUTPUT_FOLDER);
+        
+        cleanupFiles(outputFolder);
+    }
+    
     public static void runJob() throws IOException {
         FileUtils.deleteDirectory(OUTPUT_FOLDER_MODEL);
 

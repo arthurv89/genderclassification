@@ -16,10 +16,12 @@ import com.google.common.collect.ImmutableList;
 public class Main {
     public static void main(String[] args) throws IOException {
     	CategoryOrder.setCategories(parseCategories());
-        while (true) {
+        /*while (true) {
             ModelJob.runJob();
             ClassifyJob.runJob();
-        }
+        }*/
+    	
+    	ModelJob.runJobNaiveBayes();
     }
 
 	private static List<String> parseCategories() throws IOException {

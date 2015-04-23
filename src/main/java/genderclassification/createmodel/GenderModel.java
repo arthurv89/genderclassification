@@ -12,6 +12,9 @@ import java.util.List;
 import org.apache.crunch.CombineFn;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
+import org.apache.crunch.FilterFn;
+import org.apache.crunch.GroupingOptions;
+import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
@@ -22,6 +25,126 @@ import org.apache.crunch.lib.join.JoinType;
 import com.google.common.primitives.Doubles;
 
 public class GenderModel implements Serializable {
+    public static PTable<String, Long> determineModelNaiveBayes(final PCollection<String> userProductLines,
+             final PCollection<String> userGenderLines, 
+            final PCollection<String> productCategoryLines) {
+        // Parse the data files
+        final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
+        final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
+        final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
+        //final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
+
+        final PTable<String, String> userToGenderString = userToGender.parallelDo(new DoFn<Pair<String, String>, Pair<String, String>>(){
+
+            private static final long serialVersionUID = 12312312323L;
+
+            @Override
+            public void process(Pair<String, String> input, Emitter<Pair<String, String>> emitter) {
+                String[] gender = input.second().split(" ");
+                String realGender = "U";
+                if (gender[0].equalsIgnoreCase("1"))
+                    realGender = "M";
+                else if (gender[1].equalsIgnoreCase("1"))
+                    realGender = "F";
+                emitter.emit(new Pair<String, String>(input.first(),realGender));
+            }
+            
+        },DataTypes.STRING_TO_STRING_TABLE_TYPE);
+        
+        final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
+        // (P,U)* JOIN (P,C) = (P, (U,C))*
+                .join(productToUser, productToCategory, JoinType.INNER_JOIN)
+                // (U,C)
+                .values()
+                // (U,C)
+                .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+
+        // print(productToUser, "productToUser");
+        // print(productToCategory, "productToCategory");
+        // System.out.println(userToCategory);
+
+      //  final PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
+
+        final PTable<String, Pair<String, String>> genderToCategory = new DefaultJoinStrategy<String, String, String>()
+        // (U,G) JOIN (U,C) = (U,(G,C))
+                .join(userToGenderString, userToCategory, JoinType.INNER_JOIN);
+
+        // print(userToGender, "userToGender");
+        // print(userToCategory, "userToCategory");
+        
+         PTable<String, Long> maleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
+
+                private static final long serialVersionUID = 1231232340L;
+    
+                @Override
+                public boolean accept(Pair<String, Pair<String, String>> input) {
+                    return input.second().first() == "M";
+                }
+         })
+         .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String,Double>>(){
+
+               private static final long serialVersionUID = 123123213123L;
+    
+                @Override
+                public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, Double>> emitter) {
+                    emitter.emit(new Pair<String, Double>(input.second().second(),1.0));
+                }
+         }, DataTypes.STRING_TO_DOUBLE_TYPE)
+         .count()
+         .parallelDo(new DoFn<Pair<Pair<String, Double>, Long>, Pair<String,Long>>(){
+
+             private static final long serialVersionUID = 123123213123L;
+  
+              @Override
+              public void process(Pair<Pair<String, Double>, Long> input, Emitter<Pair<String, Long>> emitter) {
+                  emitter.emit(new Pair<String, Long>(input.first().first(), input.second() ));
+              }
+          }, DataTypes.STRING_TO_LONG_TYPE);
+         
+         
+         
+         
+         System.out.println(maleFreqEachCategory);
+         
+         
+         PTable<String, Long> femaleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
+
+             private static final long serialVersionUID = 1231232340L;
+ 
+             @Override
+             public boolean accept(Pair<String, Pair<String, String>> input) {
+                 return input.second().first() == "F";
+             }
+      })
+      .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String,Double>>(){
+
+            private static final long serialVersionUID = 123123213123L;
+ 
+             @Override
+             public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, Double>> emitter) {
+                 emitter.emit(new Pair<String, Double>(input.second().second(),1.0));
+             }
+      }, DataTypes.STRING_TO_DOUBLE_TYPE)
+      .count()
+      .parallelDo(new DoFn<Pair<Pair<String, Double>, Long>, Pair<String,Long>>(){
+
+          private static final long serialVersionUID = 123123213123L;
+
+           @Override
+           public void process(Pair<Pair<String, Double>, Long> input, Emitter<Pair<String, Long>> emitter) {
+               emitter.emit(new Pair<String, Long>(input.first().first(), input.second() ));
+           }
+       }, DataTypes.STRING_TO_LONG_TYPE);
+         
+         
+         System.out.println(femaleFreqEachCategory);
+
+        //so far U gender is empty - so leave it for now
+         
+         
+        return maleFreqEachCategory;
+    }
+    
     public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines,
             final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines,
             final PCollection<String> productCategoryLines) {
