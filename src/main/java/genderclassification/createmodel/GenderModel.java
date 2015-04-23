@@ -7,6 +7,7 @@ import genderclassification.utils.Mappers;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.crunch.CombineFn;
@@ -16,6 +17,8 @@ import org.apache.crunch.FilterFn;
 import org.apache.crunch.GroupingOptions;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
+import org.apache.crunch.PGroupedTable;
+import org.apache.crunch.PObject;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.fn.Aggregators;
@@ -72,7 +75,7 @@ public class GenderModel implements Serializable {
         // print(userToGender, "userToGender");
         // print(userToCategory, "userToCategory");
         
-         PTable<String, Long> maleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
+         final PTable<String, Long> maleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
 
                 private static final long serialVersionUID = 1231232340L;
     
@@ -107,7 +110,7 @@ public class GenderModel implements Serializable {
          System.out.println(maleFreqEachCategory);
          
          
-         PTable<String, Long> femaleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
+        final PTable<String, Long> femaleFreqEachCategory = genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
 
              private static final long serialVersionUID = 1231232340L;
  
@@ -141,7 +144,82 @@ public class GenderModel implements Serializable {
 
         //so far U gender is empty - so leave it for now
          
+        //find the max between male and female
+        final PTable<String, Long> maxMF = new DefaultJoinStrategy<String, Long, Long>()
+        .join(maleFreqEachCategory, femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN)
+        .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Long>>(){
+            private static final long serialVersionUID = 123123213123L;
+
+            @Override
+            public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
+            	Long max = new Long(1);
+            	if(input.second().first() == null) max = input.second().second();
+            	else if (input.second().second() == null) max = input.second().first();
+            	else max =  input.second().first() > input.second().second() ? input.second().first() : input.second().second();
+            	
+            	emitter.emit(new Pair<String, Long>(input.first(), max));
+            }
+        	
+        }, DataTypes.STRING_TO_LONG_TYPE);
          
+        System.out.println(maxMF);
+        
+        //compute IDF
+        final PTable<String, Double> sumMF = new DefaultJoinStrategy<String, Long, Long>()
+        .join(maleFreqEachCategory, femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN)
+        .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
+            private static final long serialVersionUID = 123123213123L;
+
+            @Override
+            public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
+            	Double sum = new Double(0);
+            	if(input.second().first() != null) sum = sum + input.second().first();
+            	if (input.second().second() != null) sum = sum + input.second().second();
+            	emitter.emit(new Pair<String, Double>(input.first(), sum));
+            }
+        	
+        }, DataTypes.STRING_TO_DOUBLE_TYPE);
+        
+        //to be done add idf        
+        
+        //compute TF for male
+        final PTable<String, Double> tfMale = new DefaultJoinStrategy<String, Long, Long>()
+                .join(maleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN)
+                .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
+                    private static final long serialVersionUID = 123123213123L;
+
+                    @Override
+                    public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
+                    	Double freq = new Double(0);
+                    	if(input.second().first() != null) freq = (double) ((0.5 * input.second().first()) / input.second().second());
+                    	emitter.emit(new Pair<String, Double>(input.first(), freq + 0.5));
+                    }
+                	
+                }, DataTypes.STRING_TO_DOUBLE_TYPE);
+        
+        System.out.println(tfMale);
+        
+        //compute TF for female
+        final PTable<String, Double> tfFemale = new DefaultJoinStrategy<String, Long, Long>()
+                .join(femaleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN)
+                .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
+                    private static final long serialVersionUID = 123123213123L;
+
+                    @Override
+                    public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
+                    	Double freq = new Double(0);
+                    	if(input.second().first() != null) freq = (double) ((0.5 * input.second().first()) / input.second().second());
+                    	emitter.emit(new Pair<String, Double>(input.first(), freq + 0.5));
+                    }
+                	
+                }, DataTypes.STRING_TO_DOUBLE_TYPE);
+        
+        System.out.println(tfFemale);
+        
+        
+        //join with all available categories to create a full table
+        
+        
         return maleFreqEachCategory;
     }
     
