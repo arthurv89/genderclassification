@@ -1,5 +1,6 @@
 package genderclassification;
 
+import genderclassification.classify.ClassifyJob;
 import genderclassification.createmodel.ModelJob;
 import genderclassification.domain.CategoryOrder;
 import genderclassification.utils.DataParser;
@@ -14,5 +15,7 @@ public class Main {
          */
 
         ModelJob.runJobNaiveBayes();
+        //TO DO NBClassify -- not yet
+        ClassifyJob.runJobNaiveBayes();
     }
 }

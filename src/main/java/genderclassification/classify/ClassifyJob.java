@@ -18,6 +18,26 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class ClassifyJob {
+    public static void runJobNaiveBayes() throws IOException {
+        final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
+        final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
+
+/*        final Model model = readNBModel(lines);
+        //TO DO: classifier model!
+        final NBClassifier classifier = new NBClassifier(model);
+        final File outputFolder = adapter.performPipeline(pipeline -> {
+            final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
+            final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
+            final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
+
+            return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
+        }, DataParser.OUTPUT_FOLDER);
+
+        cleanupFiles(outputFolder);
+
+        printResults(adapter);*/
+    }
+
     public static void runJob() throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
@@ -29,7 +49,7 @@ public class ClassifyJob {
             final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
-         
+
             return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
         }, DataParser.OUTPUT_FOLDER);
 
@@ -66,7 +86,7 @@ public class ClassifyJob {
         return new Model(ImmutableMap.<String, List<Double>> builder().put(g1.first(), g1.second())
                 .put(g2.first(), g2.second()).put(g3.first(), g3.second()).build());
     }
-
+    
     private static Pair<String, List<Double>> split(final String line) {
         final String[] genderAndFrequencies = line.split("\t");
         final String gender = genderAndFrequencies[0];

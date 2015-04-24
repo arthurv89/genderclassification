@@ -28,6 +28,8 @@ import com.google.common.primitives.Doubles;
 public class GenderModel implements Serializable {
 
     private static PObject<Long> nrow;
+    private static double priorM;
+    private static double priorF;
 
     public static PTable<String, Collection<Double>> determineModelNaiveBayes(
             final PCollection<String> userProductLines, final PCollection<String> userGenderLines,
@@ -41,6 +43,10 @@ public class GenderModel implements Serializable {
 
         final PTable<String, String> userToGenderString = userToGender.parallelDo(convertGenderToLetter,
                 DataTypes.STRING_TO_STRING_TABLE_TYPE);
+
+        nrow = userToGender.length(); // either #User or #Gender?
+        priorM = (double) userToGenderString.filter(filterGenderMale).length().getValue() / nrow.getValue();
+        priorF = (double) userToGenderString.filter(filterGenderFemale).length().getValue() / nrow.getValue();
 
         final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
                 .join(productToUser, productToCategory, JoinType.INNER_JOIN).values()
@@ -72,8 +78,6 @@ public class GenderModel implements Serializable {
                 femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(selectMax, DataTypes.STRING_TO_LONG_TYPE);
 
         System.out.println("Max Frequency" + maxMF);
-
-        nrow = userToGender.length(); // either #User or #Gender?
 
         // compute IDF
         final PTable<String, Double> idf = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
@@ -168,6 +172,14 @@ public class GenderModel implements Serializable {
                 .combineValues(sumFrequencies);
     }
 
+    public static double getPriorMale() {
+        return priorM;
+    }
+
+    public static double getPriorFemale() {
+        return priorF;
+    }
+
     private static final long serialVersionUID = -6683089099880990848L;
 
     private static final int CATEGORY_COUNT = CategoryOrder.countCategories();
@@ -253,6 +265,26 @@ public class GenderModel implements Serializable {
             else if (gender[1].equalsIgnoreCase("1"))
                 realGender = "F";
             emitter.emit(new Pair<String, String>(input.first(), realGender));
+        }
+    };
+
+    private static FilterFn<Pair<String, String>> filterGenderMale = new FilterFn<Pair<String, String>>() {
+
+        private static final long serialVersionUID = 1231232340L;
+
+        @Override
+        public boolean accept(Pair<String, String> input) {
+            return input.second() == "M";
+        }
+    };
+
+    private static FilterFn<Pair<String, String>> filterGenderFemale = new FilterFn<Pair<String, String>>() {
+
+        private static final long serialVersionUID = 1231232340L;
+
+        @Override
+        public boolean accept(Pair<String, String> input) {
+            return input.second() == "F";
         }
     };
 

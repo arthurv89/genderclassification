@@ -5,9 +5,12 @@ import genderclassification.domain.Model;
 import genderclassification.pipeline.MemPipelineAdapter;
 import genderclassification.utils.DataParser;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -33,6 +36,7 @@ public class ModelJob implements Serializable {
                     categoryLines);
         }, OUTPUT_FOLDER);
 
+        writePrior(Arrays.asList(GenderModel.getPriorMale(), GenderModel.getPriorFemale()));
         cleanupFiles(outputFolder);
     }
 
@@ -54,6 +58,23 @@ public class ModelJob implements Serializable {
         cleanupFiles(outputFolder);
 
         printModel(adapter);
+    }
+
+    private static void writePrior(List<Double> priors) throws IOException {
+        try {
+            File file = new File(OUTPUT_FOLDER_MODEL + "prior.txt");
+
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(priors.toString());
+            bw.close();
+        } catch (IOException e) {
+            throw e;
+        }
     }
 
     private static void cleanupFiles(final File outputFolder) throws IOException {
