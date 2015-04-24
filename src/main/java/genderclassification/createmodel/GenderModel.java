@@ -6,6 +6,8 @@ import genderclassification.utils.DataTypes;
 import genderclassification.utils.Mappers;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 
@@ -98,18 +100,24 @@ public class GenderModel implements Serializable {
 
         System.out.println("TF-IDF Male class: " + tfidfMale);
 
-        final PTable<String, Double> tfidfFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale, idf,
-                JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
+        final PTable<String, Double> tfidfFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale,
+                idf, JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
         System.out.println("TF-IDF Female class: " + tfidfFemale);
 
         // join Male and Female tfidf into a table
-        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(tfidfMale,
-                tfidfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
+        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(
+                tfidfMale, tfidfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
                 DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
 
         System.out.println("TF-IDF Table: " + tfidf);
-        return tfidf;
+
+        // normalize tfidf table
+        final PTable<String, Collection<Double>> tfidfNorm = tfidf.parallelDo(normalizeTfIdf,
+                DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
+
+        System.out.println("Normalized TF-IDF Table: " + tfidfNorm);
+        return tfidfNorm;
     }
 
     public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines,
@@ -370,6 +378,29 @@ public class GenderModel implements Serializable {
             emitter.emit(new Pair<String, Collection<Double>>(input.first(), Doubles.asList(val)));
         }
 
+    };
+
+    private static double round(double value, int places) {
+        if (places < 0)
+            throw new IllegalArgumentException();
+
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    };
+
+    private static DoFn<Pair<String, Collection<Double>>, Pair<String, Collection<Double>>> normalizeTfIdf = new DoFn<Pair<String, Collection<Double>>, Pair<String, Collection<Double>>>() {
+
+        private static final long serialVersionUID = 1231312412421L;
+
+        @Override
+        public void process(Pair<String, Collection<Double>> input, Emitter<Pair<String, Collection<Double>>> emitter) {
+            double[] norm = Doubles.toArray(input.second());
+            double denum = norm[0] + norm[1];
+            norm[0] = round(norm[0] / denum, 2);
+            norm[1] = round(norm[1] / denum, 2);
+            emitter.emit(new Pair<String, Collection<Double>>(input.first(), Doubles.asList(norm)));
+        }
     };
 
     private enum Gender {
