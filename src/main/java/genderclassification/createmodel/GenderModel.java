@@ -7,18 +7,13 @@ import genderclassification.utils.Mappers;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.crunch.CombineFn;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.FilterFn;
-import org.apache.crunch.GroupingOptions;
-import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
-import org.apache.crunch.PGroupedTable;
 import org.apache.crunch.PObject;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
@@ -29,281 +24,94 @@ import org.apache.crunch.lib.join.JoinType;
 import com.google.common.primitives.Doubles;
 
 public class GenderModel implements Serializable {
-    public static PTable<String, Collection<Double>> determineModelNaiveBayes(final PCollection<String> userProductLines,
-             final PCollection<String> userGenderLines, 
-            final PCollection<String> productCategoryLines,
-            final PCollection<String> categoryLines) {
+
+    private static PObject<Long> nrow;
+
+    public static PTable<String, Collection<Double>> determineModelNaiveBayes(
+            final PCollection<String> userProductLines, final PCollection<String> userGenderLines,
+            final PCollection<String> productCategoryLines, final PCollection<String> categoryLines) {
         // Parse the data files
         final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
         final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
         final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
         final PTable<String, Long> categories = DataParser.categoryProducts(categoryLines);
-        //final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
+        // final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
 
-        final PTable<String, String> userToGenderString = userToGender.parallelDo(new DoFn<Pair<String, String>, Pair<String, String>>(){
+        final PTable<String, String> userToGenderString = userToGender.parallelDo(convertGenderToLetter,
+                DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-            private static final long serialVersionUID = 12312312323L;
-
-            @Override
-            public void process(Pair<String, String> input, Emitter<Pair<String, String>> emitter) {
-                String[] gender = input.second().split(" ");
-                String realGender = "U";
-                if (gender[0].equalsIgnoreCase("1"))
-                    realGender = "M";
-                else if (gender[1].equalsIgnoreCase("1"))
-                    realGender = "F";
-                emitter.emit(new Pair<String, String>(input.first(),realGender));
-            }
-            
-        },DataTypes.STRING_TO_STRING_TABLE_TYPE);
-        
         final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
-        // (P,U)* JOIN (P,C) = (P, (U,C))*
-                .join(productToUser, productToCategory, JoinType.INNER_JOIN)
-                // (U,C)
-                .values()
-                // (U,C)
+                .join(productToUser, productToCategory, JoinType.INNER_JOIN).values()
                 .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        // print(productToUser, "productToUser");
-        // print(productToCategory, "productToCategory");
-        // System.out.println(userToCategory);
-
-      //  final PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
-
         final PTable<String, Pair<String, String>> genderToCategory = new DefaultJoinStrategy<String, String, String>()
-        // (U,G) JOIN (U,C) = (U,(G,C))
                 .join(userToGenderString, userToCategory, JoinType.INNER_JOIN);
 
-        // print(userToGender, "userToGender");
-        // print(userToCategory, "userToCategory");
-        
-        //System.out.println(categories);
-        
-        
-         @SuppressWarnings("unchecked")
-        final PTable<String, Long> maleFreqEachCategory = new DefaultJoinStrategy().join(genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
-
-                                                                                                    private static final long serialVersionUID = 1231232340L;
-                                                                                        
-                                                                                                    @Override
-                                                                                                    public boolean accept(Pair<String, Pair<String, String>> input) {
-                                                                                                        return input.second().first() == "M";
-                                                                                                    }
-                                                                                             })
-                                                                                             .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String,Double>>(){
-                                                                                    
-                                                                                                   private static final long serialVersionUID = 123123213123L;
-                                                                                        
-                                                                                                    @Override
-                                                                                                    public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, Double>> emitter) {
-                                                                                                        emitter.emit(new Pair<String, Double>(input.second().second(),1.0));
-                                                                                                    }
-                                                                                             }, DataTypes.STRING_TO_DOUBLE_TYPE)
-                                                                                             .count()
-                                                                                             .parallelDo(new DoFn<Pair<Pair<String, Double>, Long>, Pair<String,Long>>(){
-                                                                                    
-                                                                                                 private static final long serialVersionUID = 123123213123L;
-                                                                                      
-                                                                                                  @Override
-                                                                                                  public void process(Pair<Pair<String, Double>, Long> input, Emitter<Pair<String, Long>> emitter) {
-                                                                                                      emitter.emit(new Pair<String, Long>(input.first().first(), input.second() ));
-                                                                                                  }
-                                                                                              }, DataTypes.STRING_TO_LONG_TYPE),
-                                                                                          categories,JoinType.FULL_OUTER_JOIN)
-                                                                                          .parallelDo(new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>>(){
-
-                                                                                               private static final long serialVersionUID = 123123213123L;
-                                                                                                
-                                                                                                @Override
-                                                                                                public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
-                                                                                                    emitter.emit(new Pair<String, Long>(input.first(), input.second().first() != null ? input.second().first() : input.second().second()));
-                                                                                                }
-                                                                                                
-                                                                                              
-                                                                                          }, DataTypes.STRING_TO_LONG_TYPE);         
-         
-         
-         
-         System.out.println("Male Frequency" + maleFreqEachCategory);
-         
-         
         @SuppressWarnings("unchecked")
-        final PTable<String, Long> femaleFreqEachCategory = new DefaultJoinStrategy().join(genderToCategory.filter(new FilterFn<Pair<String, Pair<String, String>>>(){
+        final PTable<String, Long> maleFreqEachCategory = new DefaultJoinStrategy()
+                .join(genderToCategory.filter(filterMale).parallelDo(addOneToRecord, DataTypes.STRING_TO_DOUBLE_TYPE)
+                        .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
+                        JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-                                                                        private static final long serialVersionUID = 1231232340L;
-                                                            
-                                                                        @Override
-                                                                        public boolean accept(Pair<String, Pair<String, String>> input) {
-                                                                            return input.second().first() == "F";
-                                                                        }
-                                                                 })
-                                                                 .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String,Double>>(){
-                                                            
-                                                                       private static final long serialVersionUID = 123123213123L;
-                                                            
-                                                                        @Override
-                                                                        public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, Double>> emitter) {
-                                                                            emitter.emit(new Pair<String, Double>(input.second().second(),1.0));
-                                                                        }
-                                                                 }, DataTypes.STRING_TO_DOUBLE_TYPE)
-                                                                 .count()
-                                                                 .parallelDo(new DoFn<Pair<Pair<String, Double>, Long>, Pair<String,Long>>(){
-                                                            
-                                                                     private static final long serialVersionUID = 123123213123L;
-                                                            
-                                                                      @Override
-                                                                      public void process(Pair<Pair<String, Double>, Long> input, Emitter<Pair<String, Long>> emitter) {
-                                                                          emitter.emit(new Pair<String, Long>(input.first().first(), input.second() ));
-                                                                      }
-                                                                  }, DataTypes.STRING_TO_LONG_TYPE),
-                                                              categories,JoinType.FULL_OUTER_JOIN)
-                                                              .parallelDo(new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>>(){
-                                                            
-                                                                   private static final long serialVersionUID = 123123213123L;
-                                                                    
-                                                                    @Override
-                                                                    public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
-                                                                        emitter.emit(new Pair<String, Long>(input.first(), input.second().first() != null ? input.second().first() : input.second().second()));
-                                                                    }
-                                                                    
-                                                                  
-                                                              }, DataTypes.STRING_TO_LONG_TYPE);     
-         
-         
-         System.out.println("Female Frequency" + femaleFreqEachCategory);
+        System.out.println("Male Frequency" + maleFreqEachCategory);
 
-        //so far U gender is empty - so leave it for now
-         
-        //find the max between male and female
-        final PTable<String, Long> maxMF = new DefaultJoinStrategy<String, Long, Long>()
-        .join(maleFreqEachCategory, femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN)
-        .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Long>>(){
-            private static final long serialVersionUID = 123123213123L;
+        @SuppressWarnings("unchecked")
+        final PTable<String, Long> femaleFreqEachCategory = new DefaultJoinStrategy().join(
+                genderToCategory.filter(filterFemale).parallelDo(addOneToRecord, DataTypes.STRING_TO_DOUBLE_TYPE)
+                        .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
+                JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-            @Override
-            public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
-            	Long max = new Long(1);
-            	if(input.second().first() == null) max = input.second().second();
-            	else if (input.second().second() == null) max = input.second().first();
-            	else max =  input.second().first() > input.second().second() ? input.second().first() : input.second().second();
-            	
-            	emitter.emit(new Pair<String, Long>(input.first(), max));
-            }
-        	
-        }, DataTypes.STRING_TO_LONG_TYPE);
-         
+        System.out.println("Female Frequency" + femaleFreqEachCategory);
+
+        // so far U gender is empty - so leave it for now
+
+        // find the max between male and female
+        final PTable<String, Long> maxMF = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
+                femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(selectMax, DataTypes.STRING_TO_LONG_TYPE);
+
         System.out.println("Max Frequency" + maxMF);
-        
-        PObject<Long> nrow = userToGender.length(); //either #User or #Gender?
-       
-        //compute IDF
-        final PTable<String, Double> idf = new DefaultJoinStrategy<String, Long, Long>()
-        .join(maleFreqEachCategory, femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN)
-        .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
-            private static final long serialVersionUID = 123123213123L;
 
-            @Override
-            public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
-            	Double sum = new Double(0);
-            	if(input.second().first() != null) sum = sum + input.second().first();
-            	if (input.second().second() != null) sum = sum + input.second().second();
-            	emitter.emit(new Pair<String, Double>(input.first(), nrow.getValue() / sum));
-            }
-        	
-        }, DataTypes.STRING_TO_DOUBLE_TYPE);
-        
+        nrow = userToGender.length(); // either #User or #Gender?
+
+        // compute IDF
+        final PTable<String, Double> idf = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
+                femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(doSum, DataTypes.STRING_TO_DOUBLE_TYPE);
+
         System.out.println("IDF " + idf);
-        
-        //compute TF for male
-        final PTable<String, Double> tfMale = new DefaultJoinStrategy<String, Long, Long>()
-                .join(maleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN)
-                .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
-                    private static final long serialVersionUID = 123123213123L;
 
-                    @Override
-                    public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
-                    	Double freq = new Double(0);
-                    	if(input.second().first() != null) freq = (double) ((0.5 * input.second().first()) / input.second().second());
-                    	emitter.emit(new Pair<String, Double>(input.first(), freq + 0.5));
-                    }
-                	
-                }, DataTypes.STRING_TO_DOUBLE_TYPE);
-        
+        // compute TF for male
+        final PTable<String, Double> tfMale = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
+                maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf, DataTypes.STRING_TO_DOUBLE_TYPE);
+
         System.out.println("TF Male " + tfMale);
-        
-        
-        //compute TF for female
-        final PTable<String, Double> tfFemale = new DefaultJoinStrategy<String, Long, Long>()
-                .join(femaleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN)
-                .parallelDo(new DoFn<Pair<String,Pair<Long,Long>>,Pair<String, Double>>(){
-                    private static final long serialVersionUID = 123123213123L;
 
-                    @Override
-                    public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
-                    	Double freq = new Double(0);
-                    	if(input.second().first() != null) freq = (double) ((0.5 * input.second().first()) / input.second().second());
-                    	emitter.emit(new Pair<String, Double>(input.first(), freq + 0.5));
-                    }
-                	
-                }, DataTypes.STRING_TO_DOUBLE_TYPE);
-        
+        // compute TF for female
+        final PTable<String, Double> tfFemale = new DefaultJoinStrategy<String, Long, Long>().join(
+                femaleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf,
+                DataTypes.STRING_TO_DOUBLE_TYPE);
+
         System.out.println("TF Female " + tfFemale);
-        
-        
-        //join with all available categories to create a full table of TF-IDF
-        final PTable<String, Double> tfidfMale = new DefaultJoinStrategy<String, Double, Double>()
-                .join(tfMale, idf, JoinType.FULL_OUTER_JOIN)
-                .parallelDo(new DoFn<Pair<String, Pair<Double,Double>>,Pair<String, Double>>(){
-        
-                    private static final long serialVersionUID = 1123151L;
-        
-                    @Override
-                    public void process(Pair<String, Pair<Double, Double>> input, Emitter<Pair<String, Double>> emitter) {
-                        emitter.emit(new Pair<String, Double>(input.first(), input.second().first() * input.second().second()));
-                    }
-                    
-                },DataTypes.STRING_TO_DOUBLE_TYPE);
-        
+
+        // join with all available categories to create a full table of TF-IDF
+        final PTable<String, Double> tfidfMale = new DefaultJoinStrategy<String, Double, Double>().join(tfMale, idf,
+                JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
+
         System.out.println("TF-IDF Male class: " + tfidfMale);
-        
-        final PTable<String, Double> tfidFemale = new DefaultJoinStrategy<String, Double, Double>()
-                .join(tfFemale, idf, JoinType.FULL_OUTER_JOIN)
-                .parallelDo(new DoFn<Pair<String, Pair<Double,Double>>,Pair<String, Double>>(){
-        
-                    private static final long serialVersionUID = 1123151L;
-        
-                    @Override
-                    public void process(Pair<String, Pair<Double, Double>> input, Emitter<Pair<String, Double>> emitter) {
-                        emitter.emit(new Pair<String, Double>(input.first(), input.second().first() * input.second().second()));
-                    }
-                    
-                },DataTypes.STRING_TO_DOUBLE_TYPE);
-        
+
+        final PTable<String, Double> tfidFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale, idf,
+                JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
+
         System.out.println("TF-IDF Female class: " + tfidFemale);
-        
-        //join Male and Female tfidf into a table
-        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>()
-                .join(tfMale, tfFemale, JoinType.FULL_OUTER_JOIN)
-                .parallelDo(new DoFn<Pair<String,Pair<Double,Double>>, Pair<String, Collection<Double>>>(){
 
-                    private static final long serialVersionUID = 1L;
+        // join Male and Female tfidf into a table
+        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(tfMale,
+                tfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
+                DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
 
-                    @Override
-                    public void process(Pair<String, Pair<Double, Double>> input,
-                            Emitter<Pair<String, Collection<Double>>> emitter) {
-                        final double[] val = new double[2];
-                        val[0] = (input.second().first() != null ? input.second().first() : 0);
-                        val[1] = (input.second().second() != null ? input.second().second() : 0);
-                        emitter.emit(new Pair<String,Collection<Double>>(input.first(), Doubles.asList(val) ));
-                    }
-                    
-                }, DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
-        
         System.out.println("TF-IDF Table: " + tfidf);
         return tfidf;
     }
-    
+
     public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines,
             final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines,
             final PCollection<String> productCategoryLines) {
@@ -422,6 +230,146 @@ public class GenderModel implements Serializable {
 
             emitter.emit(new Pair<String, Collection<Double>>(gender, Doubles.asList(sum)));
         }
+    };
+
+    private static DoFn<Pair<String, String>, Pair<String, String>> convertGenderToLetter = new DoFn<Pair<String, String>, Pair<String, String>>() {
+
+        private static final long serialVersionUID = 12312312323L;
+
+        @Override
+        public void process(Pair<String, String> input, Emitter<Pair<String, String>> emitter) {
+            String[] gender = input.second().split(" ");
+            String realGender = "U";
+            if (gender[0].equalsIgnoreCase("1"))
+                realGender = "M";
+            else if (gender[1].equalsIgnoreCase("1"))
+                realGender = "F";
+            emitter.emit(new Pair<String, String>(input.first(), realGender));
+        }
+    };
+
+    private static FilterFn<Pair<String, Pair<String, String>>> filterMale = new FilterFn<Pair<String, Pair<String, String>>>() {
+
+        private static final long serialVersionUID = 1231232340L;
+
+        @Override
+        public boolean accept(Pair<String, Pair<String, String>> input) {
+            return input.second().first() == "M";
+        }
+    };
+
+    private static FilterFn<Pair<String, Pair<String, String>>> filterFemale = new FilterFn<Pair<String, Pair<String, String>>>() {
+
+        private static final long serialVersionUID = 1231232340L;
+
+        @Override
+        public boolean accept(Pair<String, Pair<String, String>> input) {
+            return input.second().first() == "F";
+        }
+    };
+
+    private static DoFn<Pair<String, Pair<String, String>>, Pair<String, Double>> addOneToRecord = new DoFn<Pair<String, Pair<String, String>>, Pair<String, Double>>() {
+
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, Double>> emitter) {
+            emitter.emit(new Pair<String, Double>(input.second().second(), 1.0));
+        }
+    };
+
+    private static DoFn<Pair<Pair<String, Double>, Long>, Pair<String, Long>> selectFreqVal = new DoFn<Pair<Pair<String, Double>, Long>, Pair<String, Long>>() {
+
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<Pair<String, Double>, Long> input, Emitter<Pair<String, Long>> emitter) {
+            emitter.emit(new Pair<String, Long>(input.first().first(), input.second()));
+        }
+    };
+
+    private static DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>> selectFreqValWithFrom2 = new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>>() {
+
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
+            emitter.emit(new Pair<String, Long>(input.first(), input.second().first() != null ? input.second().first()
+                    : input.second().second()));
+        }
+
+    };
+
+    private static DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>> selectMax = new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Long>>() {
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Long>> emitter) {
+            Long max = new Long(1);
+            if (input.second().first() == null)
+                max = input.second().second();
+            else if (input.second().second() == null)
+                max = input.second().first();
+            else
+                max = input.second().first() > input.second().second() ? input.second().first() : input.second()
+                        .second();
+
+            emitter.emit(new Pair<String, Long>(input.first(), max));
+        }
+
+    };
+
+    private static DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Double>> doSum = new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Double>>() {
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
+            Double sum = new Double(0);
+            if (input.second().first() != null)
+                sum = sum + input.second().first();
+            if (input.second().second() != null)
+                sum = sum + input.second().second();
+            emitter.emit(new Pair<String, Double>(input.first(), nrow.getValue() / sum));
+        }
+
+    };
+
+    private static DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Double>> computeTf = new DoFn<Pair<String, Pair<Long, Long>>, Pair<String, Double>>() {
+        private static final long serialVersionUID = 123123213123L;
+
+        @Override
+        public void process(Pair<String, Pair<Long, Long>> input, Emitter<Pair<String, Double>> emitter) {
+            Double freq = new Double(0);
+            if (input.second().first() != null)
+                freq = (double) ((0.5 * input.second().first()) / input.second().second());
+            emitter.emit(new Pair<String, Double>(input.first(), freq + 0.5));
+        }
+
+    };
+
+    private static DoFn<Pair<String, Pair<Double, Double>>, Pair<String, Double>> computeTfIdf = new DoFn<Pair<String, Pair<Double, Double>>, Pair<String, Double>>() {
+
+        private static final long serialVersionUID = 1123151L;
+
+        @Override
+        public void process(Pair<String, Pair<Double, Double>> input, Emitter<Pair<String, Double>> emitter) {
+            emitter.emit(new Pair<String, Double>(input.first(), input.second().first() * input.second().second()));
+        }
+
+    };
+
+    private static DoFn<Pair<String, Pair<Double, Double>>, Pair<String, Collection<Double>>> joinTableTfIdf = new DoFn<Pair<String, Pair<Double, Double>>, Pair<String, Collection<Double>>>() {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public void process(Pair<String, Pair<Double, Double>> input, Emitter<Pair<String, Collection<Double>>> emitter) {
+            final double[] val = new double[2];
+            val[0] = (input.second().first() != null ? input.second().first() : 0);
+            val[1] = (input.second().second() != null ? input.second().second() : 0);
+            emitter.emit(new Pair<String, Collection<Double>>(input.first(), Doubles.asList(val)));
+        }
+
     };
 
     private enum Gender {
