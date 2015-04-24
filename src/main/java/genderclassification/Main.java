@@ -3,6 +3,7 @@ package genderclassification;
 import genderclassification.classify.ClassifyJob;
 import genderclassification.createmodel.ModelJob;
 import genderclassification.domain.CategoryOrder;
+import genderclassification.utils.DataParser;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import com.google.common.collect.ImmutableList;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-    	CategoryOrder.setCategories(parseCategories());
+    	CategoryOrder.setCategories(DataParser.parseCategories());
         /*while (true) {
             ModelJob.runJob();
             ClassifyJob.runJob();
@@ -23,11 +24,4 @@ public class Main {
     	
     	ModelJob.runJobNaiveBayes();
     }
-
-	private static List<String> parseCategories() throws IOException {
-		File file = new File("input/distinct_category.txt");
-		String fileContents = FileUtils.readFileToString(file);
-		ImmutableList<String> categories = ImmutableList.copyOf(Splitter.on("\n").trimResults().split(fileContents));
-		return categories;
-	}
 }

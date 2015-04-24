@@ -1,7 +1,10 @@
 package genderclassification.utils;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
@@ -9,6 +12,8 @@ import org.apache.crunch.Pair;
 import org.apache.crunch.Pipeline;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 
 public class DataParser {
     public static final File OUTPUT_FOLDER = new File("output/");
@@ -18,15 +23,24 @@ public class DataParser {
     private static final String INPUT_FILE_USER_PRODUCT = "input/user_product_add_2.txt";
     private static final String INPUT_FILE_USER_GENDER = "input/new_userId_gender.txt";
     private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/product_to_category_lv2.txt";
+    private static final String INPUT_FILE_CATEGORIES = "input/distinct_category.txt";
 
     static {
         {
             Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_PRODUCT).exists());
             Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_GENDER).exists());
             Preconditions.checkArgument(new File(DataParser.INPUT_FILE_PRODUCT_CATEGORY).exists());
+            Preconditions.checkArgument(new File(DataParser.INPUT_FILE_CATEGORIES).exists());
         }
     }
 
+    public static List<String> parseCategories() throws IOException {
+        File file = new File(INPUT_FILE_CATEGORIES);
+        String fileContents = FileUtils.readFileToString(file);
+        ImmutableList<String> categories = ImmutableList.copyOf(Splitter.on("\n").trimResults().split(fileContents));
+        return categories;
+    }
+    
     public static final PCollection<String> userProductData(final Pipeline pipeline) {
         return pipeline.readTextFile(INPUT_FILE_USER_PRODUCT);
     };
@@ -39,6 +53,10 @@ public class DataParser {
         return pipeline.readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
     }
 
+    public static final PCollection<String> categoryData(final Pipeline pipeline) {
+        return pipeline.readTextFile(INPUT_FILE_CATEGORIES);
+    }
+    
     public static final PCollection<String> classifiedUsers(final Pipeline pipeline) {
         try {
             return pipeline.readTextFile(OUTPUT_FOLDER_CLASSIFY);
@@ -107,6 +125,18 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
+    public final static PTable<String, Long> categoryProducts(final PCollection<String> categories) {
+        // (U,P)
+        return categories.parallelDo(new MapFn<String, Pair<String, Long>>() {
+            private static final long serialVersionUID = 4431093387533962416L;
+
+            @Override
+            public Pair<String, Long> map(final String line) {
+                return new Pair<String, Long>(line, (long) 0);
+            }
+        }, DataTypes.STRING_TO_LONG_TYPE);
+    }
+    
     public static PTable<String, String> classifiedUserGender(final PCollection<String> classifiedUserLines) {
         // (U,G)
         return classifiedUserLines.parallelDo(new MapFn<String, Pair<String, String>>() {

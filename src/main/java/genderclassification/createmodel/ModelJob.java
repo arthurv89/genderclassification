@@ -27,9 +27,10 @@ public class ModelJob implements Serializable {
             final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
-
+            final PCollection<String> categoryLines = DataParser.categoryData(pipeline);
+            
             // (G, [freq])
-                return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines);
+                return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines, categoryLines);
             }, OUTPUT_FOLDER);
         
         cleanupFiles(outputFolder);

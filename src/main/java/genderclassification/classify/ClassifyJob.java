@@ -29,7 +29,7 @@ public class ClassifyJob {
             final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
-
+         
             return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
         }, DataParser.OUTPUT_FOLDER);
 

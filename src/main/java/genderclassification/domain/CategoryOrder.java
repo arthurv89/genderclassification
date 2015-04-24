@@ -34,4 +34,8 @@ public class CategoryOrder {
     public static int countCategories() {
         return categoryOrder.size();
     }
+    
+    public static Map<String, Integer> getCategories() {
+        return categoryOrder;
+    }
 }
