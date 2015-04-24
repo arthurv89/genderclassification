@@ -28,14 +28,14 @@ public class ModelJob implements Serializable {
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
             final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
             final PCollection<String> categoryLines = DataParser.categoryData(pipeline);
-            
-            // (G, [freq])
-                return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines, categoryLines);
-            }, OUTPUT_FOLDER);
-        
+
+            return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines,
+                    categoryLines);
+        }, OUTPUT_FOLDER);
+
         cleanupFiles(outputFolder);
     }
-    
+
     public static void runJob() throws IOException {
         FileUtils.deleteDirectory(OUTPUT_FOLDER_MODEL);
 

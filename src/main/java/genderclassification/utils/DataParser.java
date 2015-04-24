@@ -40,7 +40,7 @@ public class DataParser {
         ImmutableList<String> categories = ImmutableList.copyOf(Splitter.on("\n").trimResults().split(fileContents));
         return categories;
     }
-    
+
     public static final PCollection<String> userProductData(final Pipeline pipeline) {
         return pipeline.readTextFile(INPUT_FILE_USER_PRODUCT);
     };
@@ -56,7 +56,7 @@ public class DataParser {
     public static final PCollection<String> categoryData(final Pipeline pipeline) {
         return pipeline.readTextFile(INPUT_FILE_CATEGORIES);
     }
-    
+
     public static final PCollection<String> classifiedUsers(final Pipeline pipeline) {
         try {
             return pipeline.readTextFile(OUTPUT_FOLDER_CLASSIFY);
@@ -136,7 +136,7 @@ public class DataParser {
             }
         }, DataTypes.STRING_TO_LONG_TYPE);
     }
-    
+
     public static PTable<String, String> classifiedUserGender(final PCollection<String> classifiedUserLines) {
         // (U,G)
         return classifiedUserLines.parallelDo(new MapFn<String, Pair<String, String>>() {

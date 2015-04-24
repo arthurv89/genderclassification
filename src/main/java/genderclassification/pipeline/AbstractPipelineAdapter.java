@@ -39,8 +39,8 @@ public abstract class AbstractPipelineAdapter {
         });
     }
 
-
-    public <K,V> File performPipeline(final Function<Pipeline, PTable<K, V>> execute, File outputFolder) throws IOException {
+    public <K, V> File performPipeline(final Function<Pipeline, PTable<K, V>> execute, File outputFolder)
+            throws IOException {
         final File outputFile = new File(outputFolder, UUID.randomUUID().toString());
 
         pipeline.enableDebug();
@@ -48,7 +48,7 @@ public abstract class AbstractPipelineAdapter {
         final PTable<K, V> result = execute.apply(pipeline);
         pipeline.writeTextFile(result, outputFile.getAbsolutePath());
         pipeline.done();
-        
+
         return outputFile;
     }
 

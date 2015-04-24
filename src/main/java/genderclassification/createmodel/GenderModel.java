@@ -47,7 +47,7 @@ public class GenderModel implements Serializable {
         final PTable<String, Pair<String, String>> genderToCategory = new DefaultJoinStrategy<String, String, String>()
                 .join(userToGenderString, userToCategory, JoinType.INNER_JOIN);
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         final PTable<String, Long> maleFreqEachCategory = new DefaultJoinStrategy()
                 .join(genderToCategory.filter(filterMale).parallelDo(addOneToRecord, DataTypes.STRING_TO_DOUBLE_TYPE)
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
@@ -55,7 +55,7 @@ public class GenderModel implements Serializable {
 
         System.out.println("Male Frequency" + maleFreqEachCategory);
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         final PTable<String, Long> femaleFreqEachCategory = new DefaultJoinStrategy().join(
                 genderToCategory.filter(filterFemale).parallelDo(addOneToRecord, DataTypes.STRING_TO_DOUBLE_TYPE)
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
@@ -98,14 +98,14 @@ public class GenderModel implements Serializable {
 
         System.out.println("TF-IDF Male class: " + tfidfMale);
 
-        final PTable<String, Double> tfidFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale, idf,
+        final PTable<String, Double> tfidfFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale, idf,
                 JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF-IDF Female class: " + tfidFemale);
+        System.out.println("TF-IDF Female class: " + tfidfFemale);
 
         // join Male and Female tfidf into a table
-        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(tfMale,
-                tfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
+        final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(tfidfMale,
+                tfidfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
                 DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
 
         System.out.println("TF-IDF Table: " + tfidf);
@@ -329,7 +329,7 @@ public class GenderModel implements Serializable {
                 sum = sum + input.second().first();
             if (input.second().second() != null)
                 sum = sum + input.second().second();
-            emitter.emit(new Pair<String, Double>(input.first(), nrow.getValue() / sum));
+            emitter.emit(new Pair<String, Double>(input.first(), Math.log10(nrow.getValue() / sum)));
         }
 
     };

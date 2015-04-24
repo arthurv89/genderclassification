@@ -8,14 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CategoryOrder {
-	private static Logger log = LoggerFactory.getLogger(CategoryOrder.class);
+    private static Logger log = LoggerFactory.getLogger(CategoryOrder.class);
 
     private static Map<String, Integer> categoryOrder;
+
     public static void setCategories(final List<String> categories) {
-    	categoryOrder = convertCategories(categories);
-    	log.info("Initialized categories: " + categories);
+        categoryOrder = convertCategories(categories);
+        log.info("Initialized categories: " + categories);
     }
-    
 
     private static Map<String, Integer> convertCategories(final List<String> categories) {
         final HashMap<String, Integer> map = new HashMap<String, Integer>();
@@ -34,7 +34,7 @@ public class CategoryOrder {
     public static int countCategories() {
         return categoryOrder.size();
     }
-    
+
     public static Map<String, Integer> getCategories() {
         return categoryOrder;
     }
