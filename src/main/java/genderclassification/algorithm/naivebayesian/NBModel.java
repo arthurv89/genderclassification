@@ -1,11 +1,11 @@
-package genderclassification.domain;
+package genderclassification.algorithm.naivebayesian;
 
 import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 
 public class NBModel {
-    private  final ImmutableMap<String, List<Double>> both;
+    private final ImmutableMap<String, List<Double>> both;
     public final static int MALE = 0; 
     public final static int FEMALE = 1; 
 

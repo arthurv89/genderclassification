@@ -13,7 +13,6 @@ import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.FilterFn;
 import org.apache.crunch.MapFn;
-import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
@@ -29,14 +28,13 @@ public class Classifier {
     }
 
     // (U,[prob])
-    public PTable<String, String> classifyUsers(final PCollection<String> userProductLines,
-            final PCollection<String> userGenderLines, final PCollection<String> productCategoryLines) {
+    public PTable<String, String> classifyUsers() {
         // (U,P)
-        final PTable<String, String> userToProduct = DataParser.userProduct(userProductLines);
+        final PTable<String, String> userToProduct = DataParser.userProduct();
         // (U,G)
-        final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
+        final PTable<String, String> userToGender = DataParser.userGender();
         // (P,C)
-        final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
+        final PTable<String, String> productToCategory = DataParser.productCategory();
 
         final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
         // (U,P) JOIN (U,G) = (U,(P,G+null))

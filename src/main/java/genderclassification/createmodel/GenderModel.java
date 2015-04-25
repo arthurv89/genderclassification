@@ -35,10 +35,10 @@ public class GenderModel implements Serializable {
             final PCollection<String> userProductLines, final PCollection<String> userGenderLines,
             final PCollection<String> productCategoryLines, final PCollection<String> categoryLines) {
         // Parse the data files
-        final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
-        final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
-        final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
-        final PTable<String, Long> categories = DataParser.categoryProducts(categoryLines);
+        final PTable<String, String> productToUser = DataParser.productUser();
+        final PTable<String, String> userToGender = DataParser.userGender();
+        final PTable<String, String> productToCategory = DataParser.productCategory();
+        final PTable<String, Long> categories = DataParser.categoryProducts();
         // final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
 
         final PTable<String, String> userToGenderString = userToGender.parallelDo(convertGenderToLetter,
@@ -124,14 +124,12 @@ public class GenderModel implements Serializable {
         return tfidfNorm;
     }
 
-    public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines,
-            final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines,
-            final PCollection<String> productCategoryLines) {
+    public static PTable<String, Collection<Double>> determineModel(PTable<String, String> userToGender) {
+        
         // Parse the data files
-        final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
-        final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
-        final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
-        final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
+        final PTable<String, String> productToUser = DataParser.productUser();
+        final PTable<String, String> productToCategory = DataParser.productCategory();
+        final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender();
 
         final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
         // (P,U)* JOIN (P,C) = (P, (U,C))*

@@ -25,7 +25,12 @@ public class DataParser {
     private static final String INPUT_FILE_USER_GENDER = "input/new_userId_gender.txt";
     private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/product_to_category_lv2.txt";
     private static final String INPUT_FILE_CATEGORIES = "input/distinct_category.txt";
-    
+
+    private static final PCollection<String> userProductLines = Main.getPipeline().readTextFile(INPUT_FILE_USER_PRODUCT);
+    private static final PCollection<String> userGenderLines = Main.getPipeline().readTextFile(INPUT_FILE_USER_GENDER);
+    private static final PCollection<String> productCategoryLines = Main.getPipeline().readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
+    private static final PCollection<String> categoryLines = Main.getPipeline().readTextFile(INPUT_FILE_CATEGORIES);
+
     static {
         {
             Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_PRODUCT).exists());
@@ -42,22 +47,6 @@ public class DataParser {
         return categories;
     }
 
-    public static final PCollection<String> userProductLines() {
-        return Main.getPipeline().readTextFile(INPUT_FILE_USER_PRODUCT);
-    };
-
-    public static final PCollection<String> userGenderLines() {
-        return Main.getPipeline().readTextFile(INPUT_FILE_USER_GENDER);
-    };
-
-    public static final PCollection<String> productCategoryLines() {
-        return Main.getPipeline().readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
-    }
-
-    public static final PCollection<String> categoryLines() {
-        return Main.getPipeline().readTextFile(INPUT_FILE_CATEGORIES);
-    }
-
     public static final PCollection<String> classifiedUsers() {
         try {
             return Main.getPipeline().readTextFile(OUTPUT_FOLDER_CLASSIFY);
@@ -66,7 +55,7 @@ public class DataParser {
         }
     }
 
-    public final static PTable<String, String> productUser(final PCollection<String> userProductLines) {
+    public final static PTable<String, String> productUser() {
         // (P,U)
         return userProductLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 5368118058771709696L;
@@ -81,7 +70,7 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
-    public final static PTable<String, String> productCategory(final PCollection<String> productCategoryLines) {
+    public final static PTable<String, String> productCategory() {
         // (P,C)
         return productCategoryLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 8685387020655952971L;
@@ -96,7 +85,7 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
-    public final static PTable<String, String> userGender(final PCollection<String> userGenderLines) {
+    public final static PTable<String, String> userGender() {
         // (U,G)
         return userGenderLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 8685387120655952971L;
@@ -111,7 +100,7 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
-    public final static PTable<String, String> userProduct(final PCollection<String> userProductLines) {
+    public final static PTable<String, String> userProduct() {
         // (U,P)
         return userProductLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 4431093387533962416L;
@@ -126,9 +115,9 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
-    public final static PTable<String, Long> categoryProducts(final PCollection<String> categories) {
+    public final static PTable<String, Long> categoryProducts() {
         // (U,P)
-        return categories.parallelDo(new MapFn<String, Pair<String, Long>>() {
+        return categoryLines.parallelDo(new MapFn<String, Pair<String, Long>>() {
             private static final long serialVersionUID = 4431093387533962416L;
 
             @Override
@@ -138,9 +127,9 @@ public class DataParser {
         }, DataTypes.STRING_TO_LONG_TYPE);
     }
 
-    public static PTable<String, String> classifiedUserGender(final PCollection<String> classifiedUserLines) {
+    public static PTable<String, String> classifiedUserGender() {
         // (U,G)
-        return classifiedUserLines.parallelDo(new MapFn<String, Pair<String, String>>() {
+        return classifiedUsers().parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 532879173812973289L;
 
             @Override

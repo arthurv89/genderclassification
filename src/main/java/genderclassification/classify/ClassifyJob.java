@@ -1,7 +1,7 @@
 package genderclassification.classify;
 
+import genderclassification.algorithm.naivebayesian.NBModel;
 import genderclassification.domain.Model;
-import genderclassification.domain.NBModel;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
 import genderclassification.run.Main;
@@ -51,11 +51,7 @@ public class ClassifyJob {
 
         final Classifier classifier = new Classifier(model);
         final File outputFolder = adapter.performPipeline(pipeline -> {
-            final PCollection<String> userProductLines = DataParser.userProductLines();
-            final PCollection<String> userGenderLines = DataParser.userGenderLines();
-            final PCollection<String> productCategoryLines = DataParser.productCategoryLines();
-
-            return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
+            return classifier.classifyUsers();
         }, DataParser.OUTPUT_FOLDER);
 
         cleanupFiles(outputFolder);

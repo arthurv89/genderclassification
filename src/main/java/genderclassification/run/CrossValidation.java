@@ -13,15 +13,15 @@ import org.apache.crunch.fn.FilterFns;
 public class CrossValidation {
 	private static final double TRAIN_TEST_RATIO = 3.0;
 	private static final int ITERATIONS = 10;
+	private static final PTable<String, String> userToGender = DataParser.userGender();
 	private final Random random;
-	private final PTable<String, String> userToGender = DataParser.userGender(DataParser.userGenderLines());
 	
 	public CrossValidation(final int seed) {
 		random = new Random(seed);
 	}
 
 	public double performCrossValidation(final ClassificationAlgorithm classificationAlgorithm) {
-		int sumCorrectlyClassified = 0;
+		long sumCorrectlyClassified = 0;
 		for(int i=0; i<ITERATIONS; i++) {
 			final FilterFn<Pair<String, String>> testRowFilter = testRowFilter(random.nextLong());
 			final PTable<String, String> trainingRowIds = userToGender.filter(FilterFns.not(testRowFilter));
