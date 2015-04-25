@@ -1,6 +1,7 @@
 package genderclassification.classify;
 
 import genderclassification.domain.Model;
+import genderclassification.domain.NBModel;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
 import genderclassification.utils.DataParser;
@@ -8,6 +9,7 @@ import genderclassification.utils.DataParser;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -22,9 +24,9 @@ public class ClassifyJob {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 
-/*        final Model model = readNBModel(lines);
+        final NBModel nbModel = readNBModel(lines);
         //TO DO: classifier model!
-        final NBClassifier classifier = new NBClassifier(model);
+/*        final NBClassifier classifier = new NBClassifier(model);
         final File outputFolder = adapter.performPipeline(pipeline -> {
             final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
             final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
@@ -87,6 +89,16 @@ public class ClassifyJob {
                 .put(g2.first(), g2.second()).put(g3.first(), g3.second()).build());
     }
     
+    public static NBModel readNBModel(final List<String> lines) {
+        final HashMap<String, List<Double>> map = new HashMap<String, List<Double>>();
+        for (String line : lines) {
+            Pair<String, List<Double>> pair = splitNb(line);
+            map.put(pair.first(),pair.second());
+        }
+        ImmutableMap.<String, List<Double>>  builder().build();
+        return new NBModel(ImmutableMap.copyOf(map));
+    }
+    
     private static Pair<String, List<Double>> split(final String line) {
         final String[] genderAndFrequencies = line.split("\t");
         final String gender = genderAndFrequencies[0];
@@ -94,4 +106,13 @@ public class ClassifyJob {
         final List<Double> frequencies = Lists.transform(Arrays.asList(freq), s -> Double.parseDouble(s));
         return new Pair<String, List<Double>>(gender, frequencies);
     }
+    
+    private static Pair<String, List<Double>> splitNb(final String line) {
+        final String[] categoryFreq = line.split("\t");
+        final String category = categoryFreq[0];
+        final String[] freq = categoryFreq[1].replace("[", "").replace("]", "").split(",");
+        final List<Double> frequencies = Lists.transform(Arrays.asList(freq), s -> Double.parseDouble(s));
+        return new Pair<String, List<Double>>(category, frequencies);
+    }
+    
 }

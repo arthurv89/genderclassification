@@ -45,8 +45,8 @@ public class GenderModel implements Serializable {
                 DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
         nrow = userToGender.length(); // either #User or #Gender?
-        priorM = (double) userToGenderString.filter(filterGenderMale).length().getValue() / nrow.getValue();
-        priorF = (double) userToGenderString.filter(filterGenderFemale).length().getValue() / nrow.getValue();
+        priorM = round((double) userToGenderString.filter(filterGenderMale).length().getValue() / nrow.getValue(), 2);
+        priorF = round((double) userToGenderString.filter(filterGenderFemale).length().getValue() / nrow.getValue(), 2);
 
         final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
                 .join(productToUser, productToCategory, JoinType.INNER_JOIN).values()

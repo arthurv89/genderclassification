@@ -1,21 +1,20 @@
 package genderclassification.domain;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableMap;
 
 public class NBModel {
-    private final ImmutableMap<String, Double> male;
-    private final ImmutableMap<String, Double> female;
+    private  final ImmutableMap<String, List<Double>> both;
+    public final static int MALE = 0; 
+    public final static int FEMALE = 1; 
 
-    public NBModel(final ImmutableMap<String, Double> posteriorMale, final ImmutableMap<String, Double> posteriorFemale) {
-        this.male = posteriorMale;
-        this.female = posteriorFemale;
+    public NBModel(final ImmutableMap<String, List<Double>> posteriorBoth) {
+        this.both = posteriorBoth;
     }
 
-    public Double getCategoryProbGivenMale(final String category) {
-        return male.get(category);
+    public List<Double> getCategoryProb(final String category) {
+        return both.get(category);
     }
 
-    public Double getCategoryProbGivenFemale(final String category) {
-        return female.get(category);
-    }
 }
