@@ -1,13 +1,12 @@
 package genderclassification.createmodel;
 
 import genderclassification.domain.CategoryOrder;
+import genderclassification.domain.NBModel;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
 import genderclassification.utils.Mappers;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 
@@ -23,6 +22,8 @@ import org.apache.crunch.fn.Aggregators;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
 import org.apache.crunch.lib.join.JoinType;
 
+import static genderclassification.utils.MathFunctions.round;
+
 import com.google.common.primitives.Doubles;
 
 public class GenderModel implements Serializable {
@@ -35,7 +36,7 @@ public class GenderModel implements Serializable {
             final PCollection<String> userProductLines, final PCollection<String> userGenderLines,
             final PCollection<String> productCategoryLines, final PCollection<String> categoryLines) {
         // Parse the data files
-        final PTable<String, String> productToUser = DataParser.productUser(userProductLines);
+        final PTable<String, String> userToProduct = DataParser.productUser(userProductLines);
         final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
         final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
         final PTable<String, Long> categories = DataParser.categoryProducts(categoryLines);
@@ -49,7 +50,7 @@ public class GenderModel implements Serializable {
         priorF = round((double) userToGenderString.filter(filterGenderFemale).length().getValue() / nrow.getValue(), 2);
 
         final PTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
-                .join(productToUser, productToCategory, JoinType.INNER_JOIN).values()
+                .join(userToProduct, productToCategory, JoinType.INNER_JOIN).values()
                 .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
         final PTable<String, Pair<String, String>> genderToCategory = new DefaultJoinStrategy<String, String, String>()
@@ -61,7 +62,7 @@ public class GenderModel implements Serializable {
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
                         JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Male Frequency" + maleFreqEachCategory);
+        System.out.println("Male Frequency: " + maleFreqEachCategory);
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
         final PTable<String, Long> femaleFreqEachCategory = new DefaultJoinStrategy().join(
@@ -69,7 +70,7 @@ public class GenderModel implements Serializable {
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
                 JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Female Frequency" + femaleFreqEachCategory);
+        System.out.println("Female Frequency: " + femaleFreqEachCategory);
 
         // so far U gender is empty - so leave it for now
 
@@ -77,26 +78,26 @@ public class GenderModel implements Serializable {
         final PTable<String, Long> maxMF = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(selectMax, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Max Frequency" + maxMF);
+        System.out.println("Max Frequency: " + maxMF);
 
         // compute IDF
         final PTable<String, Double> idf = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(doSum, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("IDF " + idf);
+        System.out.println("IDF: " + idf);
 
         // compute TF for male
         final PTable<String, Double> tfMale = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF Male " + tfMale);
+        System.out.println("TF Male: " + tfMale);
 
         // compute TF for female
         final PTable<String, Double> tfFemale = new DefaultJoinStrategy<String, Long, Long>().join(
                 femaleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf,
                 DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF Female " + tfFemale);
+        System.out.println("TF Female: " + tfFemale);
 
         // join with all available categories to create a full table of TF-IDF
         final PTable<String, Double> tfidfMale = new DefaultJoinStrategy<String, Double, Double>().join(tfMale, idf,
@@ -252,7 +253,7 @@ public class GenderModel implements Serializable {
         }
     };
 
-    private static DoFn<Pair<String, String>, Pair<String, String>> convertGenderToLetter = new DoFn<Pair<String, String>, Pair<String, String>>() {
+    public static DoFn<Pair<String, String>, Pair<String, String>> convertGenderToLetter = new DoFn<Pair<String, String>, Pair<String, String>>() {
 
         private static final long serialVersionUID = 12312312323L;
 
@@ -261,9 +262,9 @@ public class GenderModel implements Serializable {
             String[] gender = input.second().split(" ");
             String realGender = "U";
             if (gender[0].equalsIgnoreCase("1"))
-                realGender = "M";
+                realGender = NBModel.S_MALE;
             else if (gender[1].equalsIgnoreCase("1"))
-                realGender = "F";
+                realGender = NBModel.S_FEMALE;
             emitter.emit(new Pair<String, String>(input.first(), realGender));
         }
     };
@@ -274,7 +275,7 @@ public class GenderModel implements Serializable {
 
         @Override
         public boolean accept(Pair<String, String> input) {
-            return input.second() == "M";
+            return input.second() == NBModel.S_MALE;
         }
     };
 
@@ -284,7 +285,7 @@ public class GenderModel implements Serializable {
 
         @Override
         public boolean accept(Pair<String, String> input) {
-            return input.second() == "F";
+            return input.second() == NBModel.S_FEMALE;
         }
     };
 
@@ -294,7 +295,7 @@ public class GenderModel implements Serializable {
 
         @Override
         public boolean accept(Pair<String, Pair<String, String>> input) {
-            return input.second().first() == "M";
+            return input.second().first() == NBModel.S_MALE;
         }
     };
 
@@ -304,7 +305,7 @@ public class GenderModel implements Serializable {
 
         @Override
         public boolean accept(Pair<String, Pair<String, String>> input) {
-            return input.second().first() == "F";
+            return input.second().first() == NBModel.S_FEMALE;
         }
     };
 
@@ -410,15 +411,6 @@ public class GenderModel implements Serializable {
             emitter.emit(new Pair<String, Collection<Double>>(input.first(), Doubles.asList(val)));
         }
 
-    };
-
-    private static double round(double value, int places) {
-        if (places < 0)
-            throw new IllegalArgumentException();
-
-        BigDecimal bd = new BigDecimal(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
     };
 
     private static DoFn<Pair<String, Collection<Double>>, Pair<String, Collection<Double>>> normalizeTfIdf = new DoFn<Pair<String, Collection<Double>>, Pair<String, Collection<Double>>>() {
