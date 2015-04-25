@@ -85,7 +85,13 @@ public class DataParser {
         }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
     }
 
+    private static boolean userGenderRead = false;
     public final static PTable<String, String> userGender() {
+    	if(userGenderRead) {
+    		throw new RuntimeException("You can't read the userGender directly");
+    	}
+    	
+    	userGenderRead = true;
         // (U,G)
         return userGenderLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 8685387120655952971L;

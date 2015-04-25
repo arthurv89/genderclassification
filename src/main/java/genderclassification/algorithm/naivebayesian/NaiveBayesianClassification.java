@@ -24,15 +24,15 @@ public class NaiveBayesianClassification extends ClassificationAlgorithm {
 	@Override
 	public PTable<String, String> run(final PTable<String, String> trainingDataset, final PCollection<String> userIds) {
 		try {
-			runJobNaiveBayes(trainingDataset);
+			createModel(trainingDataset);
 			//TO DO NBClassify -- not yet
-			return runJobNaiveBayes(userIds);
+			return classify(userIds);
 		} catch(final IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private void runJobNaiveBayes(PTable<String, String> trainingDataset) throws IOException {
+	private void createModel(final PTable<String, String> trainingDataset) throws IOException {
         FileUtils.deleteDirectory(ModelJobs.OUTPUT_FOLDER_MODEL);
 
         final File outputFolder = MemPipelineAdapter.getInstance().performPipeline(pipeline -> {
@@ -43,7 +43,7 @@ public class NaiveBayesianClassification extends ClassificationAlgorithm {
         ModelJobs.cleanupFiles(outputFolder);
     }
 
-    private PTable<String, String> runJobNaiveBayes(PCollection<String> userIds) throws IOException {
+    private PTable<String, String> classify(final PCollection<String> userIds) throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 
@@ -66,8 +66,8 @@ public class NaiveBayesianClassification extends ClassificationAlgorithm {
 
     private NaiveBayesianModel readNBModel(final List<String> lines) {
         final HashMap<String, List<Double>> map = new HashMap<String, List<Double>>();
-        for (String line : lines) {
-            Pair<String, List<Double>> pair = splitNb(line);
+        for (final String line : lines) {
+            final Pair<String, List<Double>> pair = splitNb(line);
             map.put(pair.first(),pair.second());
         }
         ImmutableMap.<String, List<Double>>  builder().build();

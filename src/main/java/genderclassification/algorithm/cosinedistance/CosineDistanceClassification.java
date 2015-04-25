@@ -7,27 +7,41 @@ import genderclassification.run.ClassificationAlgorithm;
 import genderclassification.run.Main;
 import genderclassification.utils.ClassifyJob;
 import genderclassification.utils.DataParser;
+import genderclassification.utils.DataTypes;
 import genderclassification.utils.ModelJobs;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.crunch.DoFn;
+import org.apache.crunch.Emitter;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
+import org.apache.crunch.Pair;
+
+import com.google.common.collect.Lists;
 
 public class CosineDistanceClassification extends ClassificationAlgorithm {
+	private static final int ITERATIONS = 1;
+
 	@Override
 	public PTable<String, String> run(final PTable<String, String> trainingDataset, final PCollection<String> userIds) throws IOException {
-		for (int i = 0; i < 10; i++) {
+		PTable<String, String> classify = null;
+		for (int i = 0; i < ITERATIONS; i++) {
 			createModel(trainingDataset);
-			classify(userIds);
+			classify = classify(userIds);
 		}
-		return null;
+		return finalize(classify);
 	}
 
-	private void createModel(PTable<String, String> trainingDataset) throws IOException {
+	private PTable<String, String> finalize(final PTable<String, String> classifiedUsers) {
+		return classifiedUsers.parallelDo(chooseGender, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+	}
+
+	private void createModel(final PTable<String, String> trainingDataset) throws IOException {
 		FileUtils.deleteDirectory(ModelJobs.OUTPUT_FOLDER_MODEL);
 
 		final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
@@ -41,19 +55,38 @@ public class CosineDistanceClassification extends ClassificationAlgorithm {
 		ModelJobs.printModel(adapter);
 	}
 
-	private void classify(PCollection<String> userIds) throws IOException {
+	private PTable<String, String> classify(final PCollection<String> userIds) throws IOException {
         final AbstractPipelineAdapter adapter = Main.getAdapter();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 
         final Model model = ModelJobs.createModel(lines);
 
         final CosineDistanceClassifier classifier = new CosineDistanceClassifier(model);
+        final PTable<String, String> lazyResults = classifier.classifyUsers(userIds);;
         final File outputFolder = adapter.performPipeline(pipeline -> {
-            return classifier.classifyUsers();
+        	return lazyResults;
         }, DataParser.OUTPUT_FOLDER);
 
         ClassifyJob.cleanupFiles(outputFolder);
 
         ClassifyJob.printResults(adapter);
+        
+        return lazyResults;
     }
+
+	private final DoFn<Pair<String,String>, Pair<String, String>> chooseGender = new DoFn<Pair<String,String>, Pair<String, String>>() {
+		private static final long serialVersionUID = 310669319740768120L;
+
+		@Override
+		public void process(final Pair<String, String> input, final Emitter<Pair<String, String>> emitter) {
+			final String[] genderProbabilities = input.second().split(" ");
+			final List<Double> genders = Lists.transform(Arrays.asList(genderProbabilities), (final String s) -> Double.parseDouble(s));
+			if(genders.get(0) > 0.5) {
+				emitter.emit(new Pair<String, String>(input.first(), "1 0 0"));
+			} else {
+				emitter.emit(new Pair<String, String>(input.first(), "0 1 0"));
+			}
+			
+		}
+	};
 }

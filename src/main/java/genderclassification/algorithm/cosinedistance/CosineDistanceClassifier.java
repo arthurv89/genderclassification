@@ -13,6 +13,7 @@ import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.FilterFn;
 import org.apache.crunch.MapFn;
+import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
@@ -28,19 +29,16 @@ public class CosineDistanceClassifier {
     }
 
     // (U,[prob])
-    public PTable<String, String> classifyUsers() {
+    public PTable<String, String> classifyUsers(final PCollection<String> userIds) {
         // (U,P)
         final PTable<String, String> userToProduct = DataParser.userProduct();
-        // (U,G)
-        final PTable<String, String> userToGender = DataParser.userGender();
         // (P,C)
         final PTable<String, String> productToCategory = DataParser.productCategory();
 
+        final PTable<String, String> userToNull = userIds.parallelDo(userToNullMapper, DataTypes.STRING_TO_STRING_TABLE_TYPE);
         final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
-        // (U,P) JOIN (U,G) = (U,(P,G+null))
-                .join(userToProduct, userToGender, JoinType.LEFT_OUTER_JOIN)
-                // (U,(P,null))
-                .filter(nullGender)
+        		// (U,P) JOIN (U,U) = (U,(P,U))
+                .join(userToProduct, userToNull, JoinType.LEFT_OUTER_JOIN)
                 // (U,P)
                 .parallelDo(convertToUser_product, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (P,U)
@@ -79,6 +77,15 @@ public class CosineDistanceClassifier {
         }
 
     };
+    
+    private final DoFn<String, Pair<String, String>> userToNullMapper = new DoFn<String, Pair<String, String>>() {
+		private static final long serialVersionUID = 8189936866739388752L;
+
+		@Override
+		public void process(final String userId, final Emitter<Pair<String, String>> emitter) {
+			emitter.emit(new Pair<String, String>(userId, null));
+		}
+	};
 
     private final MapFn<Iterable<String>, String> classify = new MapFn<Iterable<String>, String>() {
         private static final long serialVersionUID = -5267767964697018397L;
@@ -97,7 +104,7 @@ public class CosineDistanceClassifier {
 
             final double sum = maleDistance + femaleDistance + unknownDistance;
 
-            String probabilities = new StringBuilder().append(maleDistance / sum).append(' ')
+            final String probabilities = new StringBuilder().append(maleDistance / sum).append(' ')
                     .append(femaleDistance / sum).append(' ').append(unknownDistance / sum).toString();
             return probabilities;
         }

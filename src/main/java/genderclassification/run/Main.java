@@ -19,8 +19,8 @@ public class Main {
         CategoryOrder.setCategories(DataParser.parseCategories());
         
         CrossValidation crossValidation = new CrossValidation(SEED);
-        double score = crossValidation.performCrossValidation(CLASSIFICATION_ALGORITHM);
-        System.out.println("Score: " + score);
+        double percentage = crossValidation.performCrossValidation(CLASSIFICATION_ALGORITHM) * 100;
+        System.out.println("Score: " + percentage + "%");
     }
 
 	public static Pipeline getPipeline() {

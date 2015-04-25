@@ -15,6 +15,7 @@ public class CrossValidation {
 	private static final double TRAIN_TEST_RATIO = 3.0;
 	private static final int ITERATIONS = 10;
 	private static final PTable<String, String> userToGender = DataParser.userGender();
+	private static final long userToGenderSize = userToGender.length().getValue();
 	private final Random random;
 	
 	public CrossValidation(final int seed) {
@@ -32,7 +33,7 @@ public class CrossValidation {
 			final long correctlyClassified = correctlyClassified(classifiedUsers);
 			sumCorrectlyClassified += correctlyClassified;
 		}
-		return sumCorrectlyClassified / (double) ITERATIONS;
+		return sumCorrectlyClassified / (double) ITERATIONS / (double) userToGenderSize;
 	}
 
 	private Long correctlyClassified(final PTable<String, String> classifiedUsers) {
