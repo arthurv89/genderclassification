@@ -1,4 +1,4 @@
-package genderclassification.classify;
+package genderclassification.algorithm.cosinedistance;
 
 import genderclassification.domain.CategoryOrder;
 import genderclassification.domain.Model;
@@ -18,11 +18,11 @@ import org.apache.crunch.Pair;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
 import org.apache.crunch.lib.join.JoinType;
 
-public class Classifier {
+public class CosineDistanceClassifier {
     private final Model model;
     private final Map<String, Double> modelLengthByGender;
 
-    public Classifier(final Model model) {
+    public CosineDistanceClassifier(final Model model) {
         this.model = model;
         modelLengthByGender = modelLengthByGender(model);
     }

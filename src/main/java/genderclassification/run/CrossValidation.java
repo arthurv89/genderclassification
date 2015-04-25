@@ -2,6 +2,7 @@ package genderclassification.run;
 
 import genderclassification.utils.DataParser;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.crunch.FilterFn;
@@ -20,7 +21,7 @@ public class CrossValidation {
 		random = new Random(seed);
 	}
 
-	public double performCrossValidation(final ClassificationAlgorithm classificationAlgorithm) {
+	public double performCrossValidation(final ClassificationAlgorithm classificationAlgorithm) throws IOException {
 		long sumCorrectlyClassified = 0;
 		for(int i=0; i<ITERATIONS; i++) {
 			final FilterFn<Pair<String, String>> testRowFilter = testRowFilter(random.nextLong());

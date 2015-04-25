@@ -1,6 +1,5 @@
-package genderclassification.createmodel;
+package genderclassification.utils;
 
-import genderclassification.classify.ClassifyJob;
 import genderclassification.domain.Model;
 import genderclassification.pipeline.MemPipelineAdapter;
 
@@ -9,11 +8,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.crunch.Pair;
 
-public class Jobs implements Serializable {
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
+public class ModelJobs implements Serializable {
     private static final long serialVersionUID = 540472578017394764L;
 
     public static final File OUTPUT_FOLDER = new File("output/");
@@ -47,7 +51,7 @@ public class Jobs implements Serializable {
         System.out.println();
         System.out.println();
         System.out.println("The model:");
-        final Model model = ClassifyJob.createModel(lines);
+        final Model model = createModel(lines);
         printGender(model, "M");
         printGender(model, "F");
     }
@@ -61,5 +65,21 @@ public class Jobs implements Serializable {
             System.out.print(freq + "%,\t");
         });
         System.out.println();
+    }
+
+    public static Model createModel(final List<String> lines) {
+        final Pair<String, List<Double>> g1 = split(lines.get(0));
+        final Pair<String, List<Double>> g2 = split(lines.get(1));
+        final Pair<String, List<Double>> g3 = split(lines.get(2));
+        return new Model(ImmutableMap.<String, List<Double>> builder().put(g1.first(), g1.second())
+                .put(g2.first(), g2.second()).put(g3.first(), g3.second()).build());
+    }
+    
+    private static Pair<String, List<Double>> split(final String line) {
+        final String[] genderAndFrequencies = line.split("\t");
+        final String gender = genderAndFrequencies[0];
+        final String[] freq = genderAndFrequencies[1].replace("[", "").replace("]", "").split(",");
+        final List<Double> frequencies = Lists.transform(Arrays.asList(freq), s -> Double.parseDouble(s));
+        return new Pair<String, List<Double>>(gender, frequencies);
     }
 }
