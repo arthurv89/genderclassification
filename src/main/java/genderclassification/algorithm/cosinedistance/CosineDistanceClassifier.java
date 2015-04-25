@@ -1,4 +1,4 @@
-package genderclassification.classify;
+package genderclassification.algorithm.cosinedistance;
 
 import genderclassification.domain.CategoryOrder;
 import genderclassification.domain.Model;
@@ -11,44 +11,40 @@ import java.util.Map;
 
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
-import org.apache.crunch.FilterFn;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
+import org.apache.crunch.PGroupedTable;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
 import org.apache.crunch.lib.join.JoinType;
 
-public class Classifier {
+public class CosineDistanceClassifier {
     private final Model model;
     private final Map<String, Double> modelLengthByGender;
 
-    public Classifier(final Model model) {
+    public CosineDistanceClassifier(final Model model) {
         this.model = model;
         modelLengthByGender = modelLengthByGender(model);
     }
 
     // (U,[prob])
-    public PTable<String, String> classifyUsers(final PCollection<String> userProductLines,
-            final PCollection<String> userGenderLines, final PCollection<String> productCategoryLines) {
+    public PTable<String, String> classifyUsers(final PCollection<String> userIds) {
         // (U,P)
-        final PTable<String, String> userToProduct = DataParser.userProduct(userProductLines);
-        // (U,G)
-        final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
+        final PTable<String, String> userToProduct = DataParser.userProduct();
         // (P,C)
-        final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
+        final PTable<String, String> productToCategory = DataParser.productCategory();
 
+        final PTable<String, String> userToNull = userIds.parallelDo(userToNullMapper, DataTypes.STRING_TO_STRING_TABLE_TYPE);
         final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
-        // (U,P) JOIN (U,G) = (U,(P,G+null))
-                .join(userToProduct, userToGender, JoinType.LEFT_OUTER_JOIN)
-                // (U,(P,null))
-                .filter(nullGender)
+        		// (U,P) JOIN (U,U) = (U,(P,U))
+                .join(userToProduct, userToNull, JoinType.INNER_JOIN)
                 // (U,P)
                 .parallelDo(convertToUser_product, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (P,U)
                 .parallelDo(inverse, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        return new DefaultJoinStrategy<String, String, String>()
+        PGroupedTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
         // (P,U) JOIN (P,C) = (P,(U,C))
                 .join(productToUser, productToCategory, JoinType.INNER_JOIN)
                 // (U,C)
@@ -56,21 +52,14 @@ public class Classifier {
                 // (U,C)
                 .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (U,[C])
-                .groupByKey()
+                .groupByKey();
+        
+        return userToCategory
                 // (U,[G])
                 .mapValues(classify, DataTypes.STRING_TYPE);
     }
 
     private static final int CATEGORY_COUNT = CategoryOrder.countCategories();
-
-    private static FilterFn<Pair<String, Pair<String, String>>> nullGender = new FilterFn<Pair<String, Pair<String, String>>>() {
-        private static final long serialVersionUID = -4777324870934777661L;
-
-        @Override
-        public boolean accept(final Pair<String, Pair<String, String>> input) {
-            return input.second().second() == null;
-        }
-    };
 
     private static DoFn<Pair<String, Pair<String, String>>, Pair<String, String>> convertToUser_product = new DoFn<Pair<String, Pair<String, String>>, Pair<String, String>>() {
         private static final long serialVersionUID = 5901533239721780409L;
@@ -81,6 +70,15 @@ public class Classifier {
         }
 
     };
+    
+    private final DoFn<String, Pair<String, String>> userToNullMapper = new DoFn<String, Pair<String, String>>() {
+		private static final long serialVersionUID = 8189936866739388752L;
+
+		@Override
+		public void process(final String userId, final Emitter<Pair<String, String>> emitter) {
+			emitter.emit(new Pair<String, String>(userId, null));
+		}
+	};
 
     private final MapFn<Iterable<String>, String> classify = new MapFn<Iterable<String>, String>() {
         private static final long serialVersionUID = -5267767964697018397L;
@@ -99,8 +97,13 @@ public class Classifier {
 
             final double sum = maleDistance + femaleDistance + unknownDistance;
 
-            String probabilities = new StringBuilder().append(maleDistance / sum).append(' ')
-                    .append(femaleDistance / sum).append(' ').append(unknownDistance / sum).toString();
+            final String probabilities = new StringBuilder()
+            		.append(maleDistance / sum)
+            		.append(' ')
+                    .append(femaleDistance / sum)
+                    .append(' ')
+                    .append(unknownDistance / sum)
+                    .toString();
             return probabilities;
         }
 

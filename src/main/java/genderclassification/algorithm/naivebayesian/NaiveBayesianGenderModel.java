@@ -1,24 +1,23 @@
-package genderclassification.createmodel;
+package genderclassification.algorithm.naivebayesian;
 
+<<<<<<< HEAD:src/main/java/genderclassification/createmodel/GenderModel.java
 import genderclassification.domain.CategoryOrder;
 import genderclassification.domain.NBModel;
+=======
+>>>>>>> dcf231563b83413e20a14647d794a610b9a72edd:src/main/java/genderclassification/algorithm/naivebayesian/NaiveBayesianGenderModel.java
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
 import genderclassification.utils.Mappers;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 
-import org.apache.crunch.CombineFn;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.FilterFn;
-import org.apache.crunch.PCollection;
 import org.apache.crunch.PObject;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
-import org.apache.crunch.fn.Aggregators;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
 import org.apache.crunch.lib.join.JoinType;
 
@@ -26,20 +25,25 @@ import static genderclassification.utils.MathFunctions.round;
 
 import com.google.common.primitives.Doubles;
 
-public class GenderModel implements Serializable {
-
-    private static PObject<Long> nrow;
+public class NaiveBayesianGenderModel implements Serializable {
+	private static final long serialVersionUID = -258952378400958900L;
+	
+	private static PObject<Long> nrow;
     private static double priorM;
     private static double priorF;
 
-    public static PTable<String, Collection<Double>> determineModelNaiveBayes(
-            final PCollection<String> userProductLines, final PCollection<String> userGenderLines,
-            final PCollection<String> productCategoryLines, final PCollection<String> categoryLines) {
+    public static PTable<String, Collection<Double>> determineModel(PTable<String, String> userToGender) {
         // Parse the data files
+<<<<<<< HEAD:src/main/java/genderclassification/createmodel/GenderModel.java
         final PTable<String, String> userToProduct = DataParser.productUser(userProductLines);
         final PTable<String, String> userToGender = DataParser.userGender(userGenderLines);
         final PTable<String, String> productToCategory = DataParser.productCategory(productCategoryLines);
         final PTable<String, Long> categories = DataParser.categoryProducts(categoryLines);
+=======
+        final PTable<String, String> productToUser = DataParser.productUser();
+        final PTable<String, String> productToCategory = DataParser.productCategory();
+        final PTable<String, Long> categories = DataParser.categoryProducts();
+>>>>>>> dcf231563b83413e20a14647d794a610b9a72edd:src/main/java/genderclassification/algorithm/naivebayesian/NaiveBayesianGenderModel.java
         // final PTable<String, String> classifiedUserToGender = DataParser.classifiedUserGender(classifiedUserLines);
 
         final PTable<String, String> userToGenderString = userToGender.parallelDo(convertGenderToLetter,
@@ -125,6 +129,7 @@ public class GenderModel implements Serializable {
         return tfidfNorm;
     }
 
+<<<<<<< HEAD:src/main/java/genderclassification/createmodel/GenderModel.java
     public static PTable<String, Collection<Double>> determineModel(final PCollection<String> userProductLines,
             final PCollection<String> userGenderLines, final PCollection<String> classifiedUserLines,
             final PCollection<String> productCategoryLines) {
@@ -254,6 +259,9 @@ public class GenderModel implements Serializable {
     };
 
     public static DoFn<Pair<String, String>, Pair<String, String>> convertGenderToLetter = new DoFn<Pair<String, String>, Pair<String, String>>() {
+=======
+    private static DoFn<Pair<String, String>, Pair<String, String>> convertGenderToLetter = new DoFn<Pair<String, String>, Pair<String, String>>() {
+>>>>>>> dcf231563b83413e20a14647d794a610b9a72edd:src/main/java/genderclassification/algorithm/naivebayesian/NaiveBayesianGenderModel.java
 
         private static final long serialVersionUID = 12312312323L;
 
@@ -427,13 +435,11 @@ public class GenderModel implements Serializable {
         }
     };
 
-    private enum Gender {
-        M(0), F(1), U(2);
+    public static double getPriorMale() {
+        return priorM;
+    }
 
-        private final int position;
-
-        private Gender(final int position) {
-            this.position = position;
-        }
+    public static double getPriorFemale() {
+        return priorF;
     }
 }

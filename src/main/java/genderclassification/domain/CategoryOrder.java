@@ -1,6 +1,6 @@
 package genderclassification.domain;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +18,7 @@ public class CategoryOrder {
     }
 
     private static Map<String, Integer> convertCategories(final List<String> categories) {
-        final HashMap<String, Integer> map = new HashMap<String, Integer>();
+        final LinkedHashMap<String, Integer> map = new LinkedHashMap<String, Integer>();
 
         for (int i = 0; i < categories.size(); i++) {
             map.put(categories.get(i), i);

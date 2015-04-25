@@ -1,6 +1,6 @@
 package genderclassification.pipeline;
 
-import genderclassification.createmodel.GenderModel;
+import genderclassification.algorithm.naivebayesian.NaiveBayesianGenderModel;
 
 import org.apache.crunch.Pipeline;
 import org.apache.crunch.impl.mr.MRPipeline;
@@ -15,6 +15,6 @@ public class MRPipelineAdapter extends AbstractPipelineAdapter {
     }
 
     public static MRPipelineAdapter getInstance() {
-        return new MRPipelineAdapter(new MRPipeline(GenderModel.class));
+        return new MRPipelineAdapter(new MRPipeline(NaiveBayesianGenderModel.class));
     }
 }
