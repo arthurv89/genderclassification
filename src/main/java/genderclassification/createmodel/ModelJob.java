@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.PCollection;
+import org.apache.crunch.PTable;
 
 public class ModelJob implements Serializable {
     private static final long serialVersionUID = 540472578017394764L;
@@ -22,15 +23,15 @@ public class ModelJob implements Serializable {
     public static final File OUTPUT_FOLDER = new File("output/");
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
-    public static void runJobNaiveBayes() throws IOException {
+    public static void runJobNaiveBayes(PTable<String, String> trainingDataset) throws IOException {
         FileUtils.deleteDirectory(OUTPUT_FOLDER_MODEL);
 
         final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final File outputFolder = adapter.performPipeline(pipeline -> {
-            final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
-            final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
-            final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
-            final PCollection<String> categoryLines = DataParser.categoryData(pipeline);
+            final PCollection<String> userProductLines = DataParser.userProductLines();
+            final PCollection<String> userGenderLines = DataParser.userGenderLines();
+            final PCollection<String> productCategoryLines = DataParser.productCategoryLines();
+            final PCollection<String> categoryLines = DataParser.categoryLines();
 
             return GenderModel.determineModelNaiveBayes(userProductLines, userGenderLines, productCategoryLines,
                     categoryLines);
@@ -45,10 +46,10 @@ public class ModelJob implements Serializable {
 
         final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final File outputFolder = adapter.performPipeline(pipeline -> {
-            final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
-            final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
-            final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
-            final PCollection<String> classifiedUsers = DataParser.classifiedUsers(pipeline);
+            final PCollection<String> userProductLines = DataParser.userProductLines();
+            final PCollection<String> userGenderLines = DataParser.userGenderLines();
+            final PCollection<String> productCategoryLines = DataParser.productCategoryLines();
+            final PCollection<String> classifiedUsers = DataParser.classifiedUsers();
 
             // (G, [freq])
                 return GenderModel.determineModel(userProductLines, userGenderLines, classifiedUsers,

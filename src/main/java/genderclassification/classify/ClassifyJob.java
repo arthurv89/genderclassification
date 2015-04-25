@@ -4,6 +4,7 @@ import genderclassification.domain.Model;
 import genderclassification.domain.NBModel;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
+import genderclassification.run.Main;
 import genderclassification.utils.DataParser;
 
 import java.io.File;
@@ -14,13 +15,14 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.PCollection;
+import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class ClassifyJob {
-    public static void runJobNaiveBayes() throws IOException {
+    public static PTable<String, String> runJobNaiveBayes(PCollection<String> userIds) throws IOException {
         final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 
@@ -38,19 +40,20 @@ public class ClassifyJob {
         cleanupFiles(outputFolder);
 
         printResults(adapter);*/
+		return null;
     }
 
     public static void runJob() throws IOException {
-        final AbstractPipelineAdapter adapter = MemPipelineAdapter.getInstance();
+        final AbstractPipelineAdapter adapter = Main.getAdapter();
         final List<String> lines = adapter.parseResult(DataParser.OUTPUT_FOLDER_MODEL);
 
         final Model model = createModel(lines);
 
         final Classifier classifier = new Classifier(model);
         final File outputFolder = adapter.performPipeline(pipeline -> {
-            final PCollection<String> userProductLines = DataParser.userProductData(pipeline);
-            final PCollection<String> userGenderLines = DataParser.userGenderData(pipeline);
-            final PCollection<String> productCategoryLines = DataParser.productCategoryData(pipeline);
+            final PCollection<String> userProductLines = DataParser.userProductLines();
+            final PCollection<String> userGenderLines = DataParser.userGenderLines();
+            final PCollection<String> productCategoryLines = DataParser.productCategoryLines();
 
             return classifier.classifyUsers(userProductLines, userGenderLines, productCategoryLines);
         }, DataParser.OUTPUT_FOLDER);

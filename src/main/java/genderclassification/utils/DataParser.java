@@ -1,5 +1,7 @@
 package genderclassification.utils;
 
+import genderclassification.run.Main;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -9,7 +11,6 @@ import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
-import org.apache.crunch.Pipeline;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -24,7 +25,7 @@ public class DataParser {
     private static final String INPUT_FILE_USER_GENDER = "input/new_userId_gender.txt";
     private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/product_to_category_lv2.txt";
     private static final String INPUT_FILE_CATEGORIES = "input/distinct_category.txt";
-
+    
     static {
         {
             Preconditions.checkArgument(new File(DataParser.INPUT_FILE_USER_PRODUCT).exists());
@@ -41,27 +42,27 @@ public class DataParser {
         return categories;
     }
 
-    public static final PCollection<String> userProductData(final Pipeline pipeline) {
-        return pipeline.readTextFile(INPUT_FILE_USER_PRODUCT);
+    public static final PCollection<String> userProductLines() {
+        return Main.getPipeline().readTextFile(INPUT_FILE_USER_PRODUCT);
     };
 
-    public static final PCollection<String> userGenderData(final Pipeline pipeline) {
-        return pipeline.readTextFile(INPUT_FILE_USER_GENDER);
+    public static final PCollection<String> userGenderLines() {
+        return Main.getPipeline().readTextFile(INPUT_FILE_USER_GENDER);
     };
 
-    public static final PCollection<String> productCategoryData(final Pipeline pipeline) {
-        return pipeline.readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
+    public static final PCollection<String> productCategoryLines() {
+        return Main.getPipeline().readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
     }
 
-    public static final PCollection<String> categoryData(final Pipeline pipeline) {
-        return pipeline.readTextFile(INPUT_FILE_CATEGORIES);
+    public static final PCollection<String> categoryLines() {
+        return Main.getPipeline().readTextFile(INPUT_FILE_CATEGORIES);
     }
 
-    public static final PCollection<String> classifiedUsers(final Pipeline pipeline) {
+    public static final PCollection<String> classifiedUsers() {
         try {
-            return pipeline.readTextFile(OUTPUT_FOLDER_CLASSIFY);
+            return Main.getPipeline().readTextFile(OUTPUT_FOLDER_CLASSIFY);
         } catch (Exception e) {
-            return pipeline.emptyPCollection(DataTypes.STRING_TYPE);
+            return Main.getPipeline().emptyPCollection(DataTypes.STRING_TYPE);
         }
     }
 
