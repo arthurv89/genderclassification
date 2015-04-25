@@ -1,5 +1,6 @@
 package genderclassification.algorithm.naivebayesian;
 
+import genderclassification.domain.CategoryOrder;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
 import genderclassification.run.ClassificationAlgorithm;
@@ -21,6 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class NaiveBayesianClassification extends ClassificationAlgorithm {
+	public void initialize() throws IOException {
+        CategoryOrder.setCategories(DataParser.parseCategories());
+	}
+	
 	@Override
 	public PTable<String, String> run(final PTable<String, String> trainingDataset, final PCollection<String> userIds) {
 		try {

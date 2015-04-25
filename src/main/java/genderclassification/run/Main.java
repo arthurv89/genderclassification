@@ -1,10 +1,9 @@
 package genderclassification.run;
 
 import genderclassification.algorithm.cosinedistance.CosineDistanceClassification;
-import genderclassification.domain.CategoryOrder;
+import genderclassification.algorithm.naivebayesian.NaiveBayesianClassification;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
-import genderclassification.utils.DataParser;
 
 import java.io.IOException;
 
@@ -16,8 +15,6 @@ public class Main {
 	private static final int SEED = 57138921;
 
 	public static void main(String[] args) throws IOException {
-        CategoryOrder.setCategories(DataParser.parseCategories());
-        
         CrossValidation crossValidation = new CrossValidation(SEED);
         double percentage = crossValidation.performCrossValidation(CLASSIFICATION_ALGORITHM) * 100;
         System.out.println("Score: " + percentage + "%");

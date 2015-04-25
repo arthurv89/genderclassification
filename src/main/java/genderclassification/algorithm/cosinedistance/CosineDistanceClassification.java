@@ -1,5 +1,6 @@
 package genderclassification.algorithm.cosinedistance;
 
+import genderclassification.domain.CategoryOrder;
 import genderclassification.domain.Model;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
@@ -27,6 +28,10 @@ import com.google.common.collect.Lists;
 public class CosineDistanceClassification extends ClassificationAlgorithm {
 	private static final int ITERATIONS = 1;
 
+	public void initialize() throws IOException {
+        CategoryOrder.setCategories(DataParser.parseCategories());
+	}
+
 	@Override
 	public PTable<String, String> run(final PTable<String, String> trainingDataset, final PCollection<String> userIds) throws IOException {
 		PTable<String, String> classify = null;
@@ -47,8 +52,8 @@ public class CosineDistanceClassification extends ClassificationAlgorithm {
 		final MemPipelineAdapter adapter = MemPipelineAdapter.getInstance();
 		final File outputFolder = adapter.performPipeline(pipeline -> {
 			// (G, [freq])
-				return CosineDistanceModel.determineModel(trainingDataset);
-			}, ModelJobs.OUTPUT_FOLDER);
+			return CosineDistanceModel.determineModel(trainingDataset);
+		}, ModelJobs.OUTPUT_FOLDER);
 
 		ModelJobs.cleanupFiles(outputFolder);
 

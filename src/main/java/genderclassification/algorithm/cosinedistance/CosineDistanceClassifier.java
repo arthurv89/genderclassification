@@ -11,9 +11,9 @@ import java.util.Map;
 
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
-import org.apache.crunch.FilterFn;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
+import org.apache.crunch.PGroupedTable;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.lib.join.DefaultJoinStrategy;
@@ -38,13 +38,13 @@ public class CosineDistanceClassifier {
         final PTable<String, String> userToNull = userIds.parallelDo(userToNullMapper, DataTypes.STRING_TO_STRING_TABLE_TYPE);
         final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
         		// (U,P) JOIN (U,U) = (U,(P,U))
-                .join(userToProduct, userToNull, JoinType.LEFT_OUTER_JOIN)
+                .join(userToProduct, userToNull, JoinType.INNER_JOIN)
                 // (U,P)
                 .parallelDo(convertToUser_product, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (P,U)
                 .parallelDo(inverse, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        return new DefaultJoinStrategy<String, String, String>()
+        PGroupedTable<String, String> userToCategory = new DefaultJoinStrategy<String, String, String>()
         // (P,U) JOIN (P,C) = (P,(U,C))
                 .join(productToUser, productToCategory, JoinType.INNER_JOIN)
                 // (U,C)
@@ -52,21 +52,14 @@ public class CosineDistanceClassifier {
                 // (U,C)
                 .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (U,[C])
-                .groupByKey()
+                .groupByKey();
+        
+        return userToCategory
                 // (U,[G])
                 .mapValues(classify, DataTypes.STRING_TYPE);
     }
 
     private static final int CATEGORY_COUNT = CategoryOrder.countCategories();
-
-    private static FilterFn<Pair<String, Pair<String, String>>> nullGender = new FilterFn<Pair<String, Pair<String, String>>>() {
-        private static final long serialVersionUID = -4777324870934777661L;
-
-        @Override
-        public boolean accept(final Pair<String, Pair<String, String>> input) {
-            return input.second().second() == null;
-        }
-    };
 
     private static DoFn<Pair<String, Pair<String, String>>, Pair<String, String>> convertToUser_product = new DoFn<Pair<String, Pair<String, String>>, Pair<String, String>>() {
         private static final long serialVersionUID = 5901533239721780409L;
@@ -104,8 +97,13 @@ public class CosineDistanceClassifier {
 
             final double sum = maleDistance + femaleDistance + unknownDistance;
 
-            final String probabilities = new StringBuilder().append(maleDistance / sum).append(' ')
-                    .append(femaleDistance / sum).append(' ').append(unknownDistance / sum).toString();
+            final String probabilities = new StringBuilder()
+            		.append(maleDistance / sum)
+            		.append(' ')
+                    .append(femaleDistance / sum)
+                    .append(' ')
+                    .append(unknownDistance / sum)
+                    .toString();
             return probabilities;
         }
 

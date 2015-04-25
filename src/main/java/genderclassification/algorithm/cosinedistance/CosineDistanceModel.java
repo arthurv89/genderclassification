@@ -12,6 +12,7 @@ import java.util.List;
 import org.apache.crunch.CombineFn;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
+import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.fn.Aggregators;
@@ -23,7 +24,7 @@ import com.google.common.primitives.Doubles;
 public class CosineDistanceModel {
 
 
-    public static PTable<String, Collection<Double>> determineModel(PTable<String, String> userToGender) {
+    public static PTable<String, Collection<Double>> determineModel(PTable<String, String> userToGenderTrainingSet) {
         
         // Parse the data files
         final PTable<String, String> productToUser = DataParser.productUser();
@@ -42,19 +43,20 @@ public class CosineDistanceModel {
         // print(productToCategory, "productToCategory");
         // System.out.println(userToCategory);
 
-        final PTable<String, String> allUsersToGender = userToGender.union(classifiedUserToGender);
+        final PTable<String, String> allUsersToGender = userToGenderTrainingSet;
+//        .union(classifiedUserToGender)
 
-        final PTable<String, Pair<String, String>> join = new DefaultJoinStrategy<String, String, String>()
-        // (U,G) JOIN (U,C) = (U,(G,C))
-                .join(allUsersToGender, userToCategory, JoinType.INNER_JOIN);
+        final PCollection<Pair<String, String>> genderToCategory = new DefaultJoinStrategy<String, String, String>()
+        		// (U,G) JOIN (U,C) = (U,(G,C))
+                .join(allUsersToGender, userToCategory, JoinType.INNER_JOIN)
+                // (G,C)
+                .values();
 
         // print(userToGender, "userToGender");
         // print(userToCategory, "userToCategory");
         // System.out.println(join);
 
-        return join
-        // (G,C)
-                .values()
+        return genderToCategory
                 // (GC,prob)*
                 .parallelDo(toGenderAndCategoryPair_probability, DataTypes.PAIR_STRING_STRING_TO_DOUBLE_TABLE_TYPE)
                 // (GC,[prob])
