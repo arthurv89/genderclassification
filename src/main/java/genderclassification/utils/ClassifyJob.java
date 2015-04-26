@@ -29,5 +29,5 @@ public class ClassifyJob {
             System.out.println();
         });
     }
-    
+
 }

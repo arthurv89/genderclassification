@@ -71,13 +71,10 @@ public class ModelJobs implements Serializable {
         final Pair<String, List<Double>> g1 = split(lines.get(0));
         final Pair<String, List<Double>> g2 = split(lines.get(1));
         final Pair<String, List<Double>> g3 = split(lines.get(2));
-        return new Model(ImmutableMap.<String, List<Double>> builder()
-        		.put(g1.first(), g1.second())
-                .put(g2.first(), g2.second())
-                .put(g3.first(), g3.second())
-                .build());
+        return new Model(ImmutableMap.<String, List<Double>> builder().put(g1.first(), g1.second())
+                .put(g2.first(), g2.second()).put(g3.first(), g3.second()).build());
     }
-    
+
     private static Pair<String, List<Double>> split(final String line) {
         final String[] genderAndFrequencies = line.split("\t");
         final String gender = genderAndFrequencies[0];

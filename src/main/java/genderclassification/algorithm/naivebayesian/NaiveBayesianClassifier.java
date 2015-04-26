@@ -1,12 +1,13 @@
 package genderclassification.algorithm.naivebayesian;
 
-import genderclassification.domain.Model;
-
 public class NaiveBayesianClassifier {
-    private final Model model;
+    private static NaiveBayesianModel model;
 
-    public NaiveBayesianClassifier(final Model model) {
-        this.model = model;
+    public NaiveBayesianClassifier(NaiveBayesianModel modelin) {
+        model = modelin;
     }
 
+    public static NaiveBayesianModel getNaiveBayesianModel(){
+        return model;
+    }
 }

@@ -26,9 +26,11 @@ public class DataParser {
     private static final String INPUT_FILE_PRODUCT_CATEGORY = "input/product_to_category_lv2.txt";
     private static final String INPUT_FILE_CATEGORIES = "input/distinct_category.txt";
 
-    private static final PCollection<String> userProductLines = Main.getPipeline().readTextFile(INPUT_FILE_USER_PRODUCT);
+    private static final PCollection<String> userProductLines = Main.getPipeline()
+            .readTextFile(INPUT_FILE_USER_PRODUCT);
     private static final PCollection<String> userGenderLines = Main.getPipeline().readTextFile(INPUT_FILE_USER_GENDER);
-    private static final PCollection<String> productCategoryLines = Main.getPipeline().readTextFile(INPUT_FILE_PRODUCT_CATEGORY);
+    private static final PCollection<String> productCategoryLines = Main.getPipeline().readTextFile(
+            INPUT_FILE_PRODUCT_CATEGORY);
     private static final PCollection<String> categoryLines = Main.getPipeline().readTextFile(INPUT_FILE_CATEGORIES);
 
     static {
@@ -86,12 +88,13 @@ public class DataParser {
     }
 
     private static boolean userGenderRead = false;
+
     public final static PTable<String, String> userGender() {
-    	if(userGenderRead) {
-    		throw new RuntimeException("You can't read the userGender directly");
-    	}
-    	
-    	userGenderRead = true;
+        if (userGenderRead) {
+            throw new RuntimeException("You can't read the userGender directly");
+        }
+
+        userGenderRead = true;
         // (U,G)
         return userGenderLines.parallelDo(new MapFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 8685387120655952971L;

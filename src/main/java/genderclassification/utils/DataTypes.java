@@ -23,4 +23,7 @@ public class DataTypes {
     public static final PTableType<String, Double> STRING_TO_DOUBLE_TYPE = Avros.keyValueTableOf(STRING_TYPE,
             DOUBLE_TYPE);
     public static final PTableType<String, Long> STRING_TO_LONG_TYPE = Avros.keyValueTableOf(STRING_TYPE, LONG_TYPE);
+    public static final PTableType<String, Pair<String, String>> STRING_TO_PAIR_STRING_TABLE_TYPE = Avros
+            .keyValueTableOf(STRING_TYPE, PAIR_STRING_STRING_TYPE);
+
 }

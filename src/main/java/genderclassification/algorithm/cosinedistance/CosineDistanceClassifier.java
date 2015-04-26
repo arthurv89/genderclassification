@@ -35,9 +35,10 @@ public class CosineDistanceClassifier {
         // (P,C)
         final PTable<String, String> productToCategory = DataParser.productCategory();
 
-        final PTable<String, String> userToNull = userIds.parallelDo(userToNullMapper, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+        final PTable<String, String> userToNull = userIds.parallelDo(userToNullMapper,
+                DataTypes.STRING_TO_STRING_TABLE_TYPE);
         final PTable<String, String> productToUser = new DefaultJoinStrategy<String, String, String>()
-        		// (U,P) JOIN (U,U) = (U,(P,U))
+        // (U,P) JOIN (U,U) = (U,(P,U))
                 .join(userToProduct, userToNull, JoinType.INNER_JOIN)
                 // (U,P)
                 .parallelDo(convertToUser_product, DataTypes.STRING_TO_STRING_TABLE_TYPE)
@@ -53,9 +54,9 @@ public class CosineDistanceClassifier {
                 .parallelDo(Mappers.IDENTITY, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 // (U,[C])
                 .groupByKey();
-        
+
         return userToCategory
-                // (U,[G])
+        // (U,[G])
                 .mapValues(classify, DataTypes.STRING_TYPE);
     }
 
@@ -70,15 +71,15 @@ public class CosineDistanceClassifier {
         }
 
     };
-    
-    private final DoFn<String, Pair<String, String>> userToNullMapper = new DoFn<String, Pair<String, String>>() {
-		private static final long serialVersionUID = 8189936866739388752L;
 
-		@Override
-		public void process(final String userId, final Emitter<Pair<String, String>> emitter) {
-			emitter.emit(new Pair<String, String>(userId, null));
-		}
-	};
+    private final DoFn<String, Pair<String, String>> userToNullMapper = new DoFn<String, Pair<String, String>>() {
+        private static final long serialVersionUID = 8189936866739388752L;
+
+        @Override
+        public void process(final String userId, final Emitter<Pair<String, String>> emitter) {
+            emitter.emit(new Pair<String, String>(userId, null));
+        }
+    };
 
     private final MapFn<Iterable<String>, String> classify = new MapFn<Iterable<String>, String>() {
         private static final long serialVersionUID = -5267767964697018397L;
@@ -97,13 +98,8 @@ public class CosineDistanceClassifier {
 
             final double sum = maleDistance + femaleDistance + unknownDistance;
 
-            final String probabilities = new StringBuilder()
-            		.append(maleDistance / sum)
-            		.append(' ')
-                    .append(femaleDistance / sum)
-                    .append(' ')
-                    .append(unknownDistance / sum)
-                    .toString();
+            final String probabilities = new StringBuilder().append(maleDistance / sum).append(' ')
+                    .append(femaleDistance / sum).append(' ').append(unknownDistance / sum).toString();
             return probabilities;
         }
 
