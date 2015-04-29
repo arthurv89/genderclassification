@@ -1,12 +1,12 @@
 package genderclassification.run;
 
 import static genderclassification.algorithm.naivebayesian.NaiveBayesianGenderModel.convertGenderToLetter;
+import static genderclassification.utils.MathFunctions.round;
 import genderclassification.algorithm.naivebayesian.NaiveBayesianModel;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -18,9 +18,12 @@ import org.apache.crunch.PObject;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.fn.FilterFns;
-import org.apache.crunch.impl.mem.collect.MemCollection;
 
 public class CrossValidation {
+    private static final String MALE_FALSE = "Male False";
+    private static final String MALE_TRUE = "Male True";
+    private static final String FEMALE_TRUE = "Female True";
+    private static final String FEMALE_FALSE = "Female False";
     private static final int TRAIN_TEST_RATIO = 3;
     private static final int ITERATIONS = 1;
     private static final PTable<String, String> userToGender = DataParser.userGender();
@@ -38,9 +41,9 @@ public class CrossValidation {
         for (int i = 0; i < ITERATIONS; i++) {
             final FilterFn<Pair<String, String>> testRowFilter = testRowFilter(random.nextLong());
             final PTable<String, String> trainingRowIds = userToGender.filter(FilterFns.not(testRowFilter));
-            // final PCollection<String> testRowIds = userToGender.filter(testRowFilter).keys();
-            final PCollection<String> testRowIds = new MemCollection<>(Arrays.asList("2000581173"),
-                    DataTypes.STRING_TYPE);
+            final PCollection<String> testRowIds = userToGender.filter(testRowFilter).keys();
+            // final PCollection<String> testRowIds = new MemCollection<>(Arrays.asList("2000581173"),
+            // DataTypes.STRING_TYPE);
 
             final PTable<String, String> classifiedUsers = classificationAlgorithm.run(trainingRowIds, testRowIds);
             final long correctlyClassified = correctlyClassified(classifiedUsers);
@@ -81,21 +84,23 @@ public class CrossValidation {
     };
 
     private static void printConfusionMatrix(final PObject<Map<String, Long>> cm) {
+        final long maleTrue = cm.getValue().get(MALE_TRUE) != null ? cm.getValue().get(MALE_TRUE) : 0;
+        final long maleFalse = cm.getValue().get(MALE_FALSE) != null ? cm.getValue().get(MALE_FALSE) : 0;
+        final long femaleFalse = cm.getValue().get(FEMALE_FALSE) != null ? cm.getValue().get(FEMALE_FALSE) : 0;
+        final long femaleTrue = cm.getValue().get(FEMALE_TRUE) != null ? cm.getValue().get(FEMALE_TRUE) : 0;
+
         System.out.println();
         System.out.println("\tConfusion Matrix");
         System.out.println("\t\t\tPredicted Value");
         System.out.println("\t\t\tMale\t\tFemale");
         System.out.println("Real Value");
-        System.out.println("Male\t\t\t" + (cm.getValue().get("Male True") != null ? cm.getValue().get("Male True") : 0)
-                + "\t\t" + (cm.getValue().get("Male False") != null ? cm.getValue().get("Male False") : 0));
-        System.out.println("FeMale\t\t\t"
-                + (cm.getValue().get("Female True") != null ? cm.getValue().get("Female True") : 0) + "\t\t"
-                + (cm.getValue().get("Female False") != null ? cm.getValue().get("Female False") : 0));
-        System.out.println();
-        Long trueSamples = (cm.getValue().get("Female True") != null ? cm.getValue().get("Female True") : 0) + (cm.getValue().get("Male True") != null ? cm.getValue().get("Male True") : 0);
-        Long falseSamples = (cm.getValue().get("Female False") != null ? cm.getValue().get("Female False") : 0) + (cm.getValue().get("Male False") != null ? cm.getValue().get("Male False") : 0);
+        System.out.println("Male\t\t\t" + maleTrue + "\t\t" + maleFalse);
+        System.out.println("FeMale\t\t\t" + femaleFalse + "\t\t" + femaleTrue);
+
+        Long trueSamples = femaleTrue + maleTrue;
+        Long falseSamples = femaleFalse + maleFalse;
         Long allSamples = trueSamples + falseSamples;
-        System.out.println("Accuracy: " + trueSamples / (double) allSamples );
+        System.out.println("Accuracy: " + round((trueSamples / (double) allSamples) * 100, 2) + "%");
     };
 
     private void printAllInformationOnResults(final PTable<String, String> classifiedSamples,
@@ -115,10 +120,10 @@ public class CrossValidation {
                 }, DataTypes.STRING_TO_STRING_TABLE_TYPE)
                 .parallelDo(convertGenderToLetter, DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        final PTable<String, String> userToGenderString = classifiedSamples.parallelDo(convertGenderToLetter,
+        final PTable<String, String> userToGenderClassified = classifiedSamples.parallelDo(convertGenderToLetter,
                 DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        final PTable<String, Pair<String, String>> compare = userToGenderReal.join(userToGenderString);
+        final PTable<String, Pair<String, String>> compare = userToGenderReal.join(userToGenderClassified);
         // TODO confusion matrix and put in cross validation
 
         final PTable<String, String> results = compare.parallelDo(
@@ -137,14 +142,14 @@ public class CrossValidation {
                         boolean correct = realClass.equalsIgnoreCase(classifiedClass);
                         if (correct) {
                             if (realClass.equals(NaiveBayesianModel.S_MALE))
-                                return "Male True";
+                                return MALE_TRUE;
                             else
-                                return "Female True";
+                                return FEMALE_TRUE;
                         } else {
                             if (realClass.equals(NaiveBayesianModel.S_MALE))
-                                return "Male False";
+                                return MALE_FALSE;
                             else
-                                return "Female False";
+                                return FEMALE_FALSE;
                         }
                     }
 
