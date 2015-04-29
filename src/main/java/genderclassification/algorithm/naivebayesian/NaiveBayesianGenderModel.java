@@ -54,7 +54,7 @@ public class NaiveBayesianGenderModel implements Serializable {
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
                         JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Male Frequency: " + maleFreqEachCategory);
+        //System.out.println("Male Frequency: " + maleFreqEachCategory);
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
         final PTable<String, Long> femaleFreqEachCategory = new DefaultJoinStrategy().join(
@@ -62,7 +62,7 @@ public class NaiveBayesianGenderModel implements Serializable {
                         .count().parallelDo(selectFreqVal, DataTypes.STRING_TO_LONG_TYPE), categories,
                 JoinType.FULL_OUTER_JOIN).parallelDo(selectFreqValWithFrom2, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Female Frequency: " + femaleFreqEachCategory);
+        //System.out.println("Female Frequency: " + femaleFreqEachCategory);
 
         // so far U gender is empty - so leave it for now
 
@@ -70,50 +70,50 @@ public class NaiveBayesianGenderModel implements Serializable {
         final PTable<String, Long> maxMF = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(selectMax, DataTypes.STRING_TO_LONG_TYPE);
 
-        System.out.println("Max Frequency: " + maxMF);
+        //System.out.println("Max Frequency: " + maxMF);
 
         // compute IDF
         final PTable<String, Double> idf = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 femaleFreqEachCategory, JoinType.FULL_OUTER_JOIN).parallelDo(doSum, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("IDF: " + idf);
+        //System.out.println("IDF: " + idf);
 
         // compute TF for male
         final PTable<String, Double> tfMale = new DefaultJoinStrategy<String, Long, Long>().join(maleFreqEachCategory,
                 maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF Male: " + tfMale);
+        //System.out.println("TF Male: " + tfMale);
 
         // compute TF for female
         final PTable<String, Double> tfFemale = new DefaultJoinStrategy<String, Long, Long>().join(
                 femaleFreqEachCategory, maxMF, JoinType.FULL_OUTER_JOIN).parallelDo(computeTf,
                 DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF Female: " + tfFemale);
+        //System.out.println("TF Female: " + tfFemale);
 
         // join with all available categories to create a full table of TF-IDF
         final PTable<String, Double> tfidfMale = new DefaultJoinStrategy<String, Double, Double>().join(tfMale, idf,
                 JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF-IDF Male class: " + tfidfMale);
+        //System.out.println("TF-IDF Male class: " + tfidfMale);
 
         final PTable<String, Double> tfidfFemale = new DefaultJoinStrategy<String, Double, Double>().join(tfFemale,
                 idf, JoinType.FULL_OUTER_JOIN).parallelDo(computeTfIdf, DataTypes.STRING_TO_DOUBLE_TYPE);
 
-        System.out.println("TF-IDF Female class: " + tfidfFemale);
+        //System.out.println("TF-IDF Female class: " + tfidfFemale);
 
         // join Male and Female tfidf into a table
         final PTable<String, Collection<Double>> tfidf = new DefaultJoinStrategy<String, Double, Double>().join(
                 tfidfMale, tfidfFemale, JoinType.FULL_OUTER_JOIN).parallelDo(joinTableTfIdf,
                 DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
 
-        System.out.println("TF-IDF Table: " + tfidf);
+        //System.out.println("TF-IDF Table: " + tfidf);
 
         // normalize tfidf table
         final PTable<String, Collection<Double>> tfidfNorm = tfidf.parallelDo(normalizeTfIdf,
                 DataTypes.STRING_TO_DOUBLE_COLLECTION_TABLE_TYPE);
 
-        System.out.println("Normalized TF-IDF Table: " + tfidfNorm);
+        System.out.println("Normalized TF-IDF Table (Model): " + tfidfNorm);
         return tfidfNorm;
     }
 

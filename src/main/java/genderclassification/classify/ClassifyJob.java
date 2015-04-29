@@ -2,6 +2,7 @@ package genderclassification.classify;
 
 import genderclassification.utils.ModelJobs;
 import genderclassification.domain.Model;
+import genderclassification.algorithm.naivebayesian.NBClassifier;
 import genderclassification.algorithm.naivebayesian.NaiveBayesianModel;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;

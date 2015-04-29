@@ -1,6 +1,5 @@
 package genderclassification.algorithm.naivebayesian;
 
-import genderclassification.classify.NBClassifier;
 import genderclassification.domain.CategoryOrder;
 import genderclassification.pipeline.AbstractPipelineAdapter;
 import genderclassification.pipeline.MemPipelineAdapter;
