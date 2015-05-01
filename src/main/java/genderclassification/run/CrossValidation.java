@@ -13,11 +13,14 @@ import java.util.Random;
 import org.apache.crunch.DoFn;
 import org.apache.crunch.Emitter;
 import org.apache.crunch.FilterFn;
+import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PObject;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 import org.apache.crunch.fn.FilterFns;
+import org.apache.crunch.lib.join.DefaultJoinStrategy;
+import org.apache.crunch.lib.join.JoinType;
 
 public class CrossValidation {
     private static final String MALE_FALSE = "Male False";
@@ -51,13 +54,16 @@ public class CrossValidation {
             sumClassifiedUsers += testRowIds.length().getValue();
             sumCorrectlyClassified += correctlyClassified;
 
-            printAllInformationOnResults(classifiedUsers, userToGender);
+            printAllInformationOnResults(classifiedUsers, userToGender, testRowIds);
         }
         return sumCorrectlyClassified / (double) sumClassifiedUsers;
     }
 
     private Long correctlyClassified(final PTable<String, String> classifiedUsers) {
-        return classifiedUsers.join(userToGender).filter(classificationCorrect).length().getValue();
+        return new DefaultJoinStrategy<String, String, String>()
+        		.join(userToGender, classifiedUsers, JoinType.LEFT_OUTER_JOIN)
+        		.filter(classificationCorrect)
+        		.length().getValue();
     }
 
     private static FilterFn<Pair<String, Pair<String, String>>> classificationCorrect = new FilterFn<Pair<String, Pair<String, String>>>() {
@@ -104,13 +110,21 @@ public class CrossValidation {
     };
 
     private void printAllInformationOnResults(final PTable<String, String> classifiedSamples,
-            final PTable<String, String> userToGender) {
+            final PTable<String, String> userToGender, PCollection<String> testRowIds) {
 
-        final PTable<String, String> userToGenderReal = userToGender
-                .join(classifiedSamples)
+        PTable<String, String> testRowIdsTable = testRowIds.parallelDo(new DoFn<String, Pair<String, String>>() {
+            private static final long serialVersionUID = 1251512L;
+
+			@Override
+			public void process(String input, Emitter<Pair<String, String>> emitter) {
+				emitter.emit(new Pair<String, String>(input, input));
+			}
+		}, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+		final PTable<String, String> userToGenderReal = userToGender
+                .join(testRowIdsTable)
                 .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String, String>>() {
 
-                    private static final long serialVersionUID = 1L;
+                    private static final long serialVersionUID = 15125212L;
 
                     @Override
                     public void process(Pair<String, Pair<String, String>> input, Emitter<Pair<String, String>> emitter) {
@@ -123,7 +137,8 @@ public class CrossValidation {
         final PTable<String, String> userToGenderClassified = classifiedSamples.parallelDo(convertGenderToLetter,
                 DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        final PTable<String, Pair<String, String>> compare = userToGenderReal.join(userToGenderClassified);
+        final PTable<String, Pair<String, String>> compare = new DefaultJoinStrategy<String, String, String>()
+        		.join(userToGenderReal, userToGenderClassified, JoinType.LEFT_OUTER_JOIN);
         // TODO confusion matrix and put in cross validation
 
         final PTable<String, String> results = compare.parallelDo(
