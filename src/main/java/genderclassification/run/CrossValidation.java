@@ -5,6 +5,7 @@ import static genderclassification.utils.MathFunctions.round;
 import genderclassification.algorithm.naivebayesian.NaiveBayesianModel;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
+import genderclassification.utils.ScenarioMaker;
 
 import java.io.IOException;
 import java.util.Map;
@@ -30,6 +31,8 @@ public class CrossValidation {
     private static final int TRAIN_TEST_RATIO = 3;
     private static final int ITERATIONS = 1;
     private static final PTable<String, String> userToGender = DataParser.userGender();
+    // private static final PTable<String, String> userToGenderSampled = ScenarioMaker
+    // .selectOneOfNFemaleSamplesForEachClassForTrainingAndTesting(userToGender, 3);
     private final Random random;
 
     public CrossValidation(final int seed) {
@@ -38,6 +41,9 @@ public class CrossValidation {
 
     public double performCrossValidation(final ClassificationAlgorithm classificationAlgorithm) throws IOException {
         classificationAlgorithm.initialize();
+
+        // System.out.println("Total Sample Number: " + userToGender.length());
+        System.out.println("Total Used Sample Number: " + userToGender.length());
 
         long sumCorrectlyClassified = 0;
         long sumClassifiedUsers = 0;
@@ -61,9 +67,8 @@ public class CrossValidation {
 
     private Long correctlyClassified(final PTable<String, String> classifiedUsers) {
         return new DefaultJoinStrategy<String, String, String>()
-        		.join(userToGender, classifiedUsers, JoinType.LEFT_OUTER_JOIN)
-        		.filter(classificationCorrect)
-        		.length().getValue();
+                .join(userToGender, classifiedUsers, JoinType.LEFT_OUTER_JOIN).filter(classificationCorrect).length()
+                .getValue();
     }
 
     private static FilterFn<Pair<String, Pair<String, String>>> classificationCorrect = new FilterFn<Pair<String, Pair<String, String>>>() {
@@ -115,12 +120,12 @@ public class CrossValidation {
         PTable<String, String> testRowIdsTable = testRowIds.parallelDo(new DoFn<String, Pair<String, String>>() {
             private static final long serialVersionUID = 1251512L;
 
-			@Override
-			public void process(String input, Emitter<Pair<String, String>> emitter) {
-				emitter.emit(new Pair<String, String>(input, input));
-			}
-		}, DataTypes.STRING_TO_STRING_TABLE_TYPE);
-		final PTable<String, String> userToGenderReal = userToGender
+            @Override
+            public void process(String input, Emitter<Pair<String, String>> emitter) {
+                emitter.emit(new Pair<String, String>(input, input));
+            }
+        }, DataTypes.STRING_TO_STRING_TABLE_TYPE);
+        final PTable<String, String> userToGenderReal = userToGender
                 .join(testRowIdsTable)
                 .parallelDo(new DoFn<Pair<String, Pair<String, String>>, Pair<String, String>>() {
 
@@ -137,8 +142,8 @@ public class CrossValidation {
         final PTable<String, String> userToGenderClassified = classifiedSamples.parallelDo(convertGenderToLetter,
                 DataTypes.STRING_TO_STRING_TABLE_TYPE);
 
-        final PTable<String, Pair<String, String>> compare = new DefaultJoinStrategy<String, String, String>()
-        		.join(userToGenderReal, userToGenderClassified, JoinType.LEFT_OUTER_JOIN);
+        final PTable<String, Pair<String, String>> compare = new DefaultJoinStrategy<String, String, String>().join(
+                userToGenderReal, userToGenderClassified, JoinType.LEFT_OUTER_JOIN);
         // TODO confusion matrix and put in cross validation
 
         final PTable<String, String> results = compare.parallelDo(
