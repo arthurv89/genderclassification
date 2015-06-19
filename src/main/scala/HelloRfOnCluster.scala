@@ -1,3 +1,5 @@
+import java.util.UUID
+
 import org.apache.spark._
 import org.apache.spark.mllib.tree.RandomForest
 import org.apache.spark.mllib.util.MLUtils
@@ -37,34 +39,41 @@ object HelloRfOnCluster extends Logging {
     // Train A RandomForest model.
     // Empty CategoricalFeaturesInfo Indicates all Features Are continuous.
     val numClasses = 4 // Iris data:. 3 Labels,(label + 1) value seems to BE needed
-    val numTrees = 20 // Use more in Practice.
     val categoricalFeaturesInfo  =  Map [ Int, Int ] ( )
     val featureSubsetStrategy = "auto" // Let the algorithm choose.
     val impurity = "gini"
-    val maxDepth = 4 // <=  30
-    val maxBins = 32
+    val numTrees = 100 // Use more in Practice.
 
-    val model = RandomForest.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins)
+    var results: List[(Double, Int, Int)] = Nil
+    for(maxDepth <- 1 to 20; maxBins <- 2 to 10 ) {
+      val model = RandomForest.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins)
 
-    // Evaluate model on test instances and Compute test error
-    val labelAndPredsRDD = testdata.zipWithIndex.map {
-      case (current, index) =>
-        val predictionResult = model.predict(current.features)
-        (index, current.label, predictionResult, current.label == predictionResult) // Tuple4
+      // Evaluate model on test instances and Compute test error
+      val labelAndPredsRDD = testdata.zipWithIndex.map {
+        case (current, index) =>
+          val predictionResult = model.predict(current.features)
+          (index, current.label, predictionResult, current.label == predictionResult) // Tuple4
+      }
+
+      val exectime = System.currentTimeMillis - startTime
+
+      val testDataCount = testdata.count()
+      val testErrCount = labelAndPredsRDD.filter(r => !r._4).count // R._4 =  4th element of tuple(Current.Label = =  PredictionResult)
+      val testSuccessRate = 100 - (testErrCount.toDouble / testDataCount * 100)
+
+      buf.append("RfClassifier Results:" + testSuccessRate + "% numTrees:" + numTrees + "maxDepth:" + maxDepth + "exectime(msec):" + exectime)
+      buf.append("Test Data Count = " + testDataCount)
+      buf.append("Test Error Count = " + testErrCount)
+      buf.append("Test Success Rate(%) = " + testSuccessRate)
+      buf.append("Learned classification Forest model: \n" + model.toDebugString)
+
+      labelAndPredsRDD.map(x => x.toString()).saveAsTextFile(outputLocation + "/detail/" + System.currentTimeMillis + "-" + UUID.randomUUID() + "/details")
+
+      results = (testSuccessRate, maxDepth, maxBins) :: results
     }
 
-    val exectime = System.currentTimeMillis - startTime
+    val sortedList = results.sortWith((x, y) => x._1 > y._1)
 
-    val testDataCount = testdata.count()
-    val testErrCount = labelAndPredsRDD.filter(r => !r._4).count // R._4 =  4th element of tuple(Current.Label = =  PredictionResult)
-    val testSuccessRate = 100 - (testErrCount.toDouble / testDataCount * 100)
-
-    buf.append("RfClassifier Results:" + testSuccessRate + "% numTrees:" + numTrees + "maxDepth:" + maxDepth + "exectime(msec):" + exectime)
-    buf.append("Test Data Count = " + testDataCount)
-    buf.append("Test Error Count = " + testErrCount)
-    buf.append("Test Success Rate(%) = " + testSuccessRate)
-    buf.append("Learned classification Forest model: \n" + model.toDebugString)
-
-    labelAndPredsRDD.map(x => x.toString()).saveAsTextFile(outputLocation + "/details")
+    buf.prepend("Results:\n" + sortedList + "\n\n")
   }
 }
