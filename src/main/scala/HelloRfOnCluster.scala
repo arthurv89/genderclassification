@@ -74,6 +74,6 @@ object HelloRfOnCluster extends Logging {
 
     val sortedList = results.sortWith((x, y) => x._1 > y._1)
 
-    buf.prepend("Results:\n" + sortedList + "\n\n")
+    buf.prepend("Results:\n\t" + sortedList.mkString("\n\t") + "\n\n")
   }
 }
