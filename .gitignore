@@ -3,3 +3,6 @@
 target/
 .settings/
 /output/*/
+.idea/
+genderclassification.iml
+results/
