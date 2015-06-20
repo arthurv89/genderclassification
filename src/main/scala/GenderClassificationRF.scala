@@ -1,3 +1,3 @@
 class GenderClassificationRF extends GenderClassificationData {
-//  userToCategory.
+//  userToUnitVectorCategories
 }
