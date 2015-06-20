@@ -1,20 +1,18 @@
 package genderclassification.utils;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import genderclassification.run.Main;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.MapFn;
 import org.apache.crunch.PCollection;
 import org.apache.crunch.PTable;
 import org.apache.crunch.Pair;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 public class DataParser {
     public static final File OUTPUT_FOLDER = new File("output/");
