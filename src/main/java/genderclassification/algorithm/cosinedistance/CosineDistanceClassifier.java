@@ -5,19 +5,12 @@ import genderclassification.domain.Model;
 import genderclassification.utils.DataParser;
 import genderclassification.utils.DataTypes;
 import genderclassification.utils.Mappers;
+import org.apache.crunch.*;
+import org.apache.crunch.lib.join.DefaultJoinStrategy;
+import org.apache.crunch.lib.join.JoinType;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.crunch.DoFn;
-import org.apache.crunch.Emitter;
-import org.apache.crunch.MapFn;
-import org.apache.crunch.PCollection;
-import org.apache.crunch.PGroupedTable;
-import org.apache.crunch.PTable;
-import org.apache.crunch.Pair;
-import org.apache.crunch.lib.join.DefaultJoinStrategy;
-import org.apache.crunch.lib.join.JoinType;
 
 public class CosineDistanceClassifier {
     private final Model model;
@@ -25,7 +18,7 @@ public class CosineDistanceClassifier {
 
     public CosineDistanceClassifier(final Model model) {
         this.model = model;
-        modelLengthByGender = modelLengthByGender(model);
+        modelLengthByGender = modelLengthByGender();
     }
 
     // (U,[prob])
@@ -67,7 +60,7 @@ public class CosineDistanceClassifier {
 
         @Override
         public void process(final Pair<String, Pair<String, String>> input, final Emitter<Pair<String, String>> emitter) {
-            emitter.emit(new Pair<String, String>(input.first(), input.second().first()));
+            emitter.emit(new Pair<>(input.first(), input.second().first()));
         }
 
     };
@@ -77,7 +70,7 @@ public class CosineDistanceClassifier {
 
         @Override
         public void process(final String userId, final Emitter<Pair<String, String>> emitter) {
-            emitter.emit(new Pair<String, String>(userId, null));
+            emitter.emit(new Pair<>(userId, null));
         }
     };
 
@@ -112,8 +105,7 @@ public class CosineDistanceClassifier {
             if (length == 0) {
                 return 0;
             }
-            final double distance = dotProduct / length;
-            return distance;
+            return dotProduct / length;
         }
     };
 
@@ -122,7 +114,7 @@ public class CosineDistanceClassifier {
 
         @Override
         public void process(final Pair<String, String> input, final Emitter<Pair<String, String>> emitter) {
-            emitter.emit(new Pair<String, String>(input.second(), input.first()));
+            emitter.emit(new Pair<>(input.second(), input.first()));
         }
     };
 
@@ -134,7 +126,7 @@ public class CosineDistanceClassifier {
         return Math.sqrt(length);
     }
 
-    private Map<String, Double> modelLengthByGender(final Model model) {
+    private Map<String, Double> modelLengthByGender() {
         final Map<String, Double> map = new HashMap<>();
         map.put("M", modelLength("M"));
         map.put("F", modelLength("F"));

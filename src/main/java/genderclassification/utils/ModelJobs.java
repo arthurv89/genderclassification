@@ -1,21 +1,15 @@
 package genderclassification.utils;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import genderclassification.domain.Model;
 import genderclassification.pipeline.MemPipelineAdapter;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.crunch.Pair;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import java.io.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class ModelJobs implements Serializable {
     private static final long serialVersionUID = 540472578017394764L;
@@ -24,20 +18,14 @@ public class ModelJobs implements Serializable {
     public static final File OUTPUT_FOLDER_MODEL = new File("output/model/");
 
     public static void writePrior(List<Double> priors) throws IOException {
-        try {
-            File file = new File(OUTPUT_FOLDER_MODEL + "prior.txt");
-
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            FileWriter fw = new FileWriter(file.getAbsoluteFile());
-            BufferedWriter bw = new BufferedWriter(fw);
-            bw.write(priors.toString());
-            bw.close();
-        } catch (IOException e) {
-            throw e;
+        File file = new File(OUTPUT_FOLDER_MODEL + "prior.txt");
+        if (!file.exists()) {
+            file.createNewFile();
         }
+        FileWriter fw = new FileWriter(file.getAbsoluteFile());
+        BufferedWriter bw = new BufferedWriter(fw);
+        bw.write(priors.toString());
+        bw.close();
     }
 
     public static void cleanupFiles(final File outputFolder) throws IOException {
@@ -79,7 +67,7 @@ public class ModelJobs implements Serializable {
         final String[] genderAndFrequencies = line.split("\t");
         final String gender = genderAndFrequencies[0];
         final String[] freq = genderAndFrequencies[1].replace("[", "").replace("]", "").split(",");
-        final List<Double> frequencies = Lists.transform(Arrays.asList(freq), s -> Double.parseDouble(s));
-        return new Pair<String, List<Double>>(gender, frequencies);
+        final List<Double> frequencies = Lists.transform(Arrays.asList(freq), Double::parseDouble);
+        return new Pair<>(gender, frequencies);
     }
 }
