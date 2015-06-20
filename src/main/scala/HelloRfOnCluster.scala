@@ -14,7 +14,7 @@ object HelloRfOnCluster extends Logging {
 
   // Load and parse the data file.
   // libsvm Style iris Data - http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/iris.scale
-  val dataset = MLUtils.loadLibSVMFile(sc, "iris.data")
+  val dataset = MLUtils.loadLibSVMFile(sc, "input/iris.scale")
 
   // Split the data into Training and test Sets(30% Held out for Testing)
   val splits = dataset.randomSplit(Array(0.7, 0.3))
