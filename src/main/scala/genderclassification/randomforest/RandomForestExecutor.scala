@@ -9,10 +9,11 @@ import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable.ListBuffer
 
-class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(implicit sc: SparkContext) {
+class RandomForestExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Int = 11L)(implicit sc: SparkContext) {
   // Split the data into Training and test Sets(30% Held out for Testing)
-  val splits = dataset.randomSplit(Array(0.7, 0.3))
-  val (trainingData, testdata) = (splits(0), splits(1))
+  val splits = dataset.randomSplit(Array(0.7, 0.3), seed)
+  val (trainingData, testData) = (splits(0), splits(1))
+  trainingData.cache()
 
   val outputLocation = "results/" + sc.appName + "/" + System.currentTimeMillis
 
@@ -44,7 +45,7 @@ class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(
         val model = RandomForest.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins)
 
         // Evaluate model on test instances and Compute test error
-        val labelAndPredsRDD = testdata.zipWithIndex().map {
+        val labelAndPredsRDD = testData.zipWithIndex().map {
           case (current, index) =>
             val predictionResult = model.predict(current.features)
             (index, current.label, predictionResult, current.label == predictionResult) // Tuple4
@@ -52,7 +53,7 @@ class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(
 
         val exectime = System.currentTimeMillis - startTime
 
-        val testDataCount = testdata.count()
+        val testDataCount = testData.count()
         val testErrCount = labelAndPredsRDD.filter(r => !r._4).count() // R._4 =  4th element of tuple(Current.Label = =  PredictionResult)
         val testSuccessRate = 100 - (testErrCount.toDouble / testDataCount * 100)
 

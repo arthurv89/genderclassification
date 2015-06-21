@@ -6,21 +6,22 @@ import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
-class SVMExecutor(dataset: RDD[LabeledPoint], numClasses: Int)(implicit sc: SparkContext) {
-  def start() = {
-    val splits = dataset.randomSplit(Array(0.7, 0.3), seed = 11L)
-    val training = splits(0).cache()
-    val test = splits(1)
+class SVMExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Int = 11L)(implicit sc: SparkContext) {
+  // Split the data into Training and test Sets(30% Held out for Testing)
+  val splits = dataset.randomSplit(Array(0.7, 0.3), seed)
+  val (trainingData, testData) = (splits(0), splits(1))
+  trainingData.cache()
 
+  def start() = {
     // Run training algorithm to build the model
     val numIterations = 100
-    val model = SVMWithSGD.train(training, numIterations)
+    val model = SVMWithSGD.train(trainingData, numIterations)
 
     // Clear the default threshold.
     model.clearThreshold()
 
     // Compute raw scores on the test set.
-    val scoreAndLabels = test.map { point =>
+    val scoreAndLabels = testData.map { point =>
       val score = model.predict(point.features)
       (score, point.label)
     }
