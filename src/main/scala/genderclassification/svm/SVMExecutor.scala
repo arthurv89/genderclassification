@@ -6,7 +6,7 @@ import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
-class SVMExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Int = 11L)(implicit sc: SparkContext) {
+class SVMExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Long = 11L)(implicit sc: SparkContext) {
   // Split the data into Training and test Sets(30% Held out for Testing)
   val splits = dataset.randomSplit(Array(0.7, 0.3), seed)
   val (trainingData, testData) = (splits(0), splits(1))

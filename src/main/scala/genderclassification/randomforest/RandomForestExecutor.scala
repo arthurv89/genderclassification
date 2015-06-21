@@ -9,7 +9,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable.ListBuffer
 
-class RandomForestExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Int = 11L)(implicit sc: SparkContext) {
+class RandomForestExecutor(dataset: RDD[LabeledPoint], numClasses: Int, seed: Long = 11L)(implicit sc: SparkContext) {
   // Split the data into Training and test Sets(30% Held out for Testing)
   val splits = dataset.randomSplit(Array(0.7, 0.3), seed)
   val (trainingData, testData) = (splits(0), splits(1))

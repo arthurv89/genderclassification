@@ -6,6 +6,7 @@ import org.apache.spark.rdd.RDD
 trait GenderClassificationData {
   implicit val sc: SparkContext
 
+
   // Data sources
   val categories: RDD[String] = sc.textFile("input/distinct_category.txt")
   val userToProduct: RDD[(String, String)] = sc.textFile("input/user_product_add_2.txt").map(_.split("\t")).map(x => (x(0), x(1)))
@@ -43,15 +44,14 @@ trait GenderClassificationData {
       .groupBy(_._1._1) // (User, CategoryIndex) -> [count]
       .mapValues(_.map(a => (a._1._2, a._2))) //  (User -> (CategoryIndex, Count))
       .sortBy(_._1)
-      .mapValues(x => {
-      //  (User -> [Ordered CountUnitVector])
-      // Make unit vector
-      val counts = x.map(_._2) // Ordered counts
-      val countSum = counts.sum
-      counts.map(x => {
-        if (countSum == 0) 0.0
-        else x.toDouble / countSum
+      .mapValues(x => {  //  (User -> [Ordered CountUnitVector])
+        // Make unit vector
+        val counts = x.map(_._2) // Ordered counts
+        val countSum = counts.sum
+        counts.map(x => {
+          if(countSum == 0) 0.0
+          else              x.toDouble / countSum
+        })
       })
-    })
   }
 }
