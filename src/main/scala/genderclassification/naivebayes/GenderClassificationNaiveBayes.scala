@@ -1,7 +1,6 @@
 package genderclassification.naivebayes
 
 import genderclassification.GenderClassificationData
-import genderclassification.GenderDataset.labeledDataset
 import org.apache.spark.{SparkConf, SparkContext}
 
 object GenderClassificationNaiveBayes extends GenderClassificationData {
@@ -11,7 +10,7 @@ object GenderClassificationNaiveBayes extends GenderClassificationData {
       .setMaster("local"))
 
   def main(args: Array[String]) = new NaiveBayesExecutor(
-    dataset = labeledDataset(userToUnitVectorCategories, userToGender),
+    dataset = labeledDataset,
     numClasses = 2
   ).start()
 }

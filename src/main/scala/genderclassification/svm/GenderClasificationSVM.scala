@@ -1,7 +1,6 @@
 package genderclassification.svm
 
 import genderclassification.GenderClassificationData
-import genderclassification.GenderDataset.labeledDataset
 import org.apache.spark.{SparkConf, SparkContext}
 
 object GenderClasificationSVM extends GenderClassificationData {
@@ -11,7 +10,7 @@ object GenderClasificationSVM extends GenderClassificationData {
       .setMaster("local"))
 
   def main(args: Array[String]) = new SVMExecutor(
-    dataset = labeledDataset(userToUnitVectorCategories, userToGender),
+    dataset = labeledDataset,
     numClasses = 2
   ).start()
 }

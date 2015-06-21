@@ -1,11 +1,12 @@
 package genderclassification
 
 import org.apache.spark.SparkContext
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
 trait GenderClassificationData {
   implicit val sc: SparkContext
-
 
   // Data sources
   val categories: RDD[String] = sc.textFile("input/distinct_category.txt")
@@ -54,4 +55,15 @@ trait GenderClassificationData {
         })
       })
   }
+
+
+  val labeledDataset = userToUnitVectorCategories
+    .join(userToGender) // (User, (RelativeCategoryCount, Gender))
+    .values // (RelativeCategoryCount, Gender)
+    .map((x: (Iterable[Double], String)) => { // (LabeledPoint)
+      val label = if(x._2 == "1 0 0") 0 else 1
+      val features = x._1.toArray
+
+      new LabeledPoint(label, Vectors.dense(features))
+  })
 }
