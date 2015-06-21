@@ -43,14 +43,15 @@ trait GenderClassificationData {
       .groupBy(_._1._1) // (User, CategoryIndex) -> [count]
       .mapValues(_.map(a => (a._1._2, a._2))) //  (User -> (CategoryIndex, Count))
       .sortBy(_._1)
-      .mapValues(x => {  //  (User -> [Ordered CountUnitVector])
-        // Make unit vector
-        val counts = x.map(_._2) // Ordered counts
-        val countSum = counts.sum
-        counts.map(x => {
-          if(countSum == 0) 0.0
-          else              x.toDouble / countSum
-        })
+      .mapValues(x => {
+      //  (User -> [Ordered CountUnitVector])
+      // Make unit vector
+      val counts = x.map(_._2) // Ordered counts
+      val countSum = counts.sum
+      counts.map(x => {
+        if (countSum == 0) 0.0
+        else x.toDouble / countSum
       })
+    })
   }
 }

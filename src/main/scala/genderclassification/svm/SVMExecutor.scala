@@ -13,7 +13,7 @@ class SVMExecutor(dataset: RDD[LabeledPoint], numClasses: Int)(implicit sc: Spar
     val test = splits(1)
 
     // Run training algorithm to build the model
-    val numIterations = 1000
+    val numIterations = 100
     val model = SVMWithSGD.train(training, numIterations)
 
     // Clear the default threshold.
