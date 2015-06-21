@@ -1,3 +1,7 @@
+package examples
+
+import genderclassification.GenderClassificationData
+import genderclassification.randomforest.RandomForestExecutor
 import org.apache.spark._
 import org.apache.spark.mllib.util.MLUtils
 

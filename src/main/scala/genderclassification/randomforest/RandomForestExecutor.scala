@@ -1,3 +1,5 @@
+package genderclassification.randomforest
+
 import java.util.UUID
 
 import org.apache.spark.SparkContext
@@ -7,12 +9,12 @@ import org.apache.spark.rdd.RDD
 
 import scala.collection.mutable.ListBuffer
 
-class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(implicit sparkContext: SparkContext) {
+class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(implicit sc: SparkContext) {
   // Split the data into Training and test Sets(30% Held out for Testing)
   val splits = dataset.randomSplit(Array(0.7, 0.3))
   val (trainingData, testdata) = (splits(0), splits(1))
 
-  val outputLocation = "results/" + sparkContext.appName + "/" + System.currentTimeMillis
+  val outputLocation = "results/" + sc.appName + "/" + System.currentTimeMillis
 
   val buf = new ListBuffer[String]
 
@@ -23,7 +25,7 @@ class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(
 
     buf.append("End")
 
-    val summaryRDD = sparkContext.makeRDD[String](buf, 1)
+    val summaryRDD = sc.makeRDD[String](buf, 1)
     summaryRDD.saveAsTextFile(outputLocation + "/summary")
   }
 
@@ -34,11 +36,11 @@ class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(
     // Empty CategoricalFeaturesInfo Indicates all Features Are continuous.
     val categoricalFeaturesInfo  =  Map [ Int, Int ] ( )
     val featureSubsetStrategy = "auto" // Let the algorithm choose.
-    val impurity = "entropy"
+    val impurity = "gini"
     val numTrees = 100 // Use more in Practice.
 
     val results =
-      for(maxDepth <- 2 to 6; maxBins <- 2 to 4 ) yield {
+      for(maxDepth <- 1 to 4; maxBins <- 2 to 4) yield {
         val model = RandomForest.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, numTrees, featureSubsetStrategy, impurity, maxDepth, maxBins)
 
         // Evaluate model on test instances and Compute test error
@@ -65,7 +67,7 @@ class RandomForestExecutor(val dataset: RDD[LabeledPoint], val numClasses: Int)(
         (testSuccessRate, maxDepth, maxBins)
       }
 
-    val sortedList = results.sortWith(_._1 > _._1)
+    val sortedList = results.sortWith((x, y) => x._1 > y._1)
 
     buf.prepend("Results:\n\t" + sortedList.mkString("\n\t") + "\n\n")
   }
