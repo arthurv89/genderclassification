@@ -6,3 +6,6 @@ target/
 .idea/
 genderclassification.iml
 results/
+input/acc_dataset/*
+build/
+.gradle/
