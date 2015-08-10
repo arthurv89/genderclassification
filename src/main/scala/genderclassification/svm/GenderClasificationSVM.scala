@@ -6,8 +6,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 object GenderClasificationSVM extends GenderClassificationData {
   override implicit lazy val sc: SparkContext = new SparkContext(
     new SparkConf()
-      .setAppName("Gender classification using SVM")
-      .setMaster("local"))
+      .setAppName("Gender classification using SVM"))
 
   def main(args: Array[String]) = new SVMExecutor(
     dataset = labeledDataset,

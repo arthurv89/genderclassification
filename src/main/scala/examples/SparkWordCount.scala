@@ -4,7 +4,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 object SparkWordCount {
-  val sc = new SparkContext(new SparkConf().setAppName("Spark Count").setMaster("local"))
+  val sc = new SparkContext(new SparkConf().setAppName("Spark Count")
 
   def main(args: Array[String]) {
     val tokenized: RDD[String] = sc.textFile("input/words.txt")

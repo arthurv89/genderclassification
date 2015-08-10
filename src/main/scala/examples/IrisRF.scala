@@ -8,8 +8,7 @@ import org.apache.spark.mllib.util.MLUtils
 object IrisRF extends GenderClassificationData {
   override implicit lazy val sc: SparkContext = new SparkContext(
     new SparkConf()
-      .setAppName("Iris random forest example")
-      .setMaster("local"))
+      .setAppName("Iris random forest example"))
 
   def main(args: Array[String]) = new RandomForestExecutor(
     // libsvm Style iris Data - http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multiclass/iris.scale
