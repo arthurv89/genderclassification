@@ -13,4 +13,3 @@ object GenderClassificationNaiveBayes extends GenderClassificationData {
     numClasses = 2
   ).start()
 }
-n

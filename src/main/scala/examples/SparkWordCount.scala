@@ -4,9 +4,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 object SparkWordCount {
-  val sc = new SparkContext(new SparkConf().setAppName("Spark Count")
+  val sc = new SparkContext(new SparkConf().setAppName("Spark Count"))
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = {
     val tokenized: RDD[String] = sc.textFile("input/words.txt")
       .flatMap(_.split(" "))
 
@@ -14,6 +14,6 @@ object SparkWordCount {
     val wordCounts: RDD[(String, Int)] = tokenized.map((_, 1))
       .reduceByKey(_ + _)
 
-    System.out.println(wordCounts.collect.mkString(", "))
+    System.out.println(wordCounts.collect().mkString(", "))
   }
 }

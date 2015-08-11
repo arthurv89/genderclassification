@@ -5,7 +5,9 @@ target/
 /output/*/
 .idea/
 genderclassification.iml
+*.ipr
 results/
 input/acc_dataset/*
 build/
 .gradle/
+
