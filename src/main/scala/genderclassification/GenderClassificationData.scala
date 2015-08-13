@@ -28,6 +28,9 @@ object GenderClassificationData {
     val joinLLI = (d1: RDD[(Long, Long)], d2: Broadcast[Map[Long, Int]]) => d1
       .flatMap(x => d2.value.get(x._1).map(v => (x._2, v)))
 
+    val joinLIB = (d1: RDD[(Long, Int)], d2: Broadcast[Map[Long, Boolean]]) => d1
+      .flatMap(x => d2.value.get(x._1).map(v => (x._2, v)))
+
 
 
     // Data sources
@@ -48,7 +51,6 @@ object GenderClassificationData {
     val product_shopIndex = joinSLI(shop_product, shop_shopIndexBc) // (Product, ShopIndex)
     shop_shopIndexBc.unpersist()
 
-
     val order_userBc = sc.broadcast(order_user.collectAsMap())
     val product_user = joinLL(order_product, order_userBc) // (Product, User)
     order_userBc.unpersist()
@@ -64,24 +66,18 @@ object GenderClassificationData {
 //      .cartesian(shopIndex) // (User, ShopIndex)
 //      .map(x => (x, 0)) // ((User, ShopIndex), 0)
 
-    val userAndCategories = activeUser_shopIndexes
-      .groupBy(x => (x._1, x._2))
-      .countByKey()
-      .groupBy(_._1._1)
-//      .reduce(x => x._1)
-//      .map(x => (x._1._1, (x._1._2, x._2)))
-//      .groupBy(_._1)
-//      .
+    val user_genderBc = sc.broadcast(user_gender.collectAsMap())
+    val shopIndex_gender = joinLIB(activeUser_shopIndexes, user_genderBc) // (shopIndex, gender)
+    user_genderBc.unpersist()
 
-
-//      .map(x => (x, 1)) // ((User, ShopIndex), 1)
-//      .reduceByKey(_ + _) // (User, ShopIndex) -> count
-//      .groupBy(_._1._1) // (User, ShopIndex) -> [count]
-//      .mapValues(_.map(a => (a._1._2, a._2))) //  (User -> (ShopIndex, Count))
-//      .sortBy(_._1) // by ShopIndex
+    val x: RDD[(Boolean, (Int, Int))] = shopIndex_gender
+      .map((_, 1)) // ((shopIndex, gender), 1)
+      .reduceByKey(_ + _) // ((shopIndex, gender), count)
+      .map(x => (x._1._2, (x._1._1, x._2))) // (gender, (shopIndex, count))
+      .sortBy(_._1) // by ShopIndex
 //      .mapValues(x => {
-//        //  (User -> [Ordered CountUnitVector])
-//        // Make unit vector
+//          (User -> [Ordered CountUnitVector])
+//         Make unit vector
 //        val counts = x.map(_._2) // Ordered counts
 //        val countSum = counts.sum
 //        counts.map(x => {
@@ -92,7 +88,7 @@ object GenderClassificationData {
 //      .join(user_gender) // (User, (RelativeCategoryCount, Gender))
 //      .values // (RelativeCategoryCount, Gender)
 //      .map((x: (Iterable[Double], Boolean)) => {
-//        // (LabeledPoint)
+//         (LabeledPoint)
 //        val label = if (x._2) 0 else 1
 //        val features = x._1.toArray
 //
