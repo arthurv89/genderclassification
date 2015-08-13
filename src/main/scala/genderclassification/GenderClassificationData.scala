@@ -2,6 +2,8 @@ package genderclassification
 
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
 import scala.collection.Map
@@ -70,29 +72,26 @@ object GenderClassificationData {
     val shopIndex_gender = joinLIB(activeUser_shopIndexes, user_genderBc) // (shopIndex, gender)
     user_genderBc.unpersist()
 
-    val x: RDD[(Boolean, (Int, Int))] = shopIndex_gender
+    shopIndex_gender
       .map((_, 1)) // ((shopIndex, gender), 1)
       .reduceByKey(_ + _) // ((shopIndex, gender), count)
       .map(x => (x._1._2, (x._1._1, x._2))) // (gender, (shopIndex, count))
-      .sortBy(_._1) // by ShopIndex
-//      .mapValues(x => {
-//          (User -> [Ordered CountUnitVector])
-//         Make unit vector
-//        val counts = x.map(_._2) // Ordered counts
-//        val countSum = counts.sum
-//        counts.map(x => {
-//          if (countSum == 0) 0.0
-//          else x.toDouble / countSum
-//        })
-//      })
-//      .join(user_gender) // (User, (RelativeCategoryCount, Gender))
-//      .values // (RelativeCategoryCount, Gender)
-//      .map((x: (Iterable[Double], Boolean)) => {
-//         (LabeledPoint)
-//        val label = if (x._2) 0 else 1
-//        val features = x._1.toArray
-//
-//        new LabeledPoint(label, Vectors.dense(features))
-//      })
+      .groupByKey() // (gender, [(shopIndex, count)])
+      .mapValues(l => (l, l.map(_._2).sum)) // (gender, ([(shopIndex, count)], sumCount)
+      .mapValues(v => {
+        v._1
+          .toList // [(shopIndex, count)]
+          .sortBy(_._1) // Sort on shopIndex
+          .map(t => { // [(shopIndex, count)]
+            if(t._2 == 0) 0.0
+            else t._2.toDouble / v._2
+          })
+      })
+      .map((x: (Boolean, Iterable[Double])) => {
+        val label = if (x._1) 0 else 1
+        val features = x._2.toArray
+
+        new LabeledPoint(label, Vectors.dense(features))
+      })
   }
 }
