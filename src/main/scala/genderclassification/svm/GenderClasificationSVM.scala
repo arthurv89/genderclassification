@@ -3,13 +3,13 @@ package genderclassification.svm
 import genderclassification.GenderClassificationData
 import org.apache.spark.{SparkConf, SparkContext}
 
-object GenderClasificationSVM extends GenderClassificationData {
-  override implicit lazy val sc: SparkContext = new SparkContext(
+object GenderClasificationSVM {
+  implicit val sc = new SparkContext(
     new SparkConf()
       .setAppName("Gender classification using SVM"))
 
   def main(args: Array[String]) = new SVMExecutor(
-    dataset = labeledDataset,
+    dataset = GenderClassificationData.labeledDataset(sc),
     numClasses = 2
   ).start()
 }

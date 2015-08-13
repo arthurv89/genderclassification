@@ -10,4 +10,4 @@ results/
 input/acc_dataset/*
 build/
 .gradle/
-
+classes/
