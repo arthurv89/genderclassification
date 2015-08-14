@@ -33,65 +33,61 @@ object GenderClassificationData {
     val joinLIB = (d1: RDD[(Long, Int)], d2: Broadcast[Map[Long, Boolean]]) => d1
       .flatMap(x => d2.value.get(x._1).map(v => (x._2, v)))
 
+    val joinILS = (d1: RDD[(Int, Long)], d2: Broadcast[Map[Int, String]]) => d1
+      .flatMap(x => d2.value.get(x._1).map(v => (x._2, v)))
+
 
 
     // Data sources
     val category_product = readCsv("input/acc_dataset/category_product.csv").map(t => (t._1.toInt, t._2.toLong)) // CategoryId, GlobalId
     val category_shop = readCsv("input/acc_dataset/category_shop.csv").map(t => (t._1.toInt, t._2)) // CategoryId, ShopName
-    val order_user = readCsv("input/acc_dataset/order_customer.csv").map(t => (t._1.toLong, t._2.toLong)) // OrderId, UserId
+    val order_user = readCsv("input/acc_dataset/order_customer.csv").map(t => (t._1.toLong, t._2.toLong)).sample(false, 0.0001) // OrderId, UserId
     val order_product = readCsv("input/acc_dataset/order_product.csv").map(t => (t._1.toLong, t._2.toLong)) // OrderId, GlobalId
     val user_gender = readCsv("input/acc_dataset/user_gender.csv").map(t => (t._1.toLong, if (t._2 == "M") true else false)) // UserId, Gender
 
     val shop_shopIndex = category_shop.values.zipWithIndex().map(x => (x._1, x._2.toInt))
-    val shopIndex = sc.parallelize(0 to shop_shopIndex.count().toInt)
 
-    val category_productBc = sc.broadcast(category_product.collectAsMap())
-    val shop_product = joinISL(category_shop, category_productBc) // (Shop, Product)
-    category_productBc.unpersist()
+    val category_shopBc = sc.broadcast(category_shop.collectAsMap())
+    val shop_product = joinILS(category_product, category_shopBc).map(_.swap) // (Shop, Product)
+    category_shopBc.unpersist()
+    category_product.unpersist()
 
     val shop_shopIndexBc = sc.broadcast(shop_shopIndex.collectAsMap())
     val product_shopIndex = joinSLI(shop_product, shop_shopIndexBc) // (Product, ShopIndex)
     shop_shopIndexBc.unpersist()
+    shop_product.unpersist()
 
     val order_userBc = sc.broadcast(order_user.collectAsMap())
     val product_user = joinLL(order_product, order_userBc) // (Product, User)
     order_userBc.unpersist()
+    order_product.unpersist()
 
     val product_shopIndexBc = sc.broadcast(product_shopIndex.collectAsMap())
     val activeUser_shopIndexes = joinLLI(product_user, product_shopIndexBc) // (User, ShopIndex)
     product_shopIndexBc.unpersist()
-
-    //  val shopIndexBc = sc.broadcast(shopIndex.collect())
-//    val userAndCategoriesToZero = order_user
-//      .values // (User)
-//      .distinct()
-//      .cartesian(shopIndex) // (User, ShopIndex)
-//      .map(x => (x, 0)) // ((User, ShopIndex), 0)
+    product_user.unpersist()
 
     val user_genderBc = sc.broadcast(user_gender.collectAsMap())
     val shopIndex_gender = joinLIB(activeUser_shopIndexes, user_genderBc) // (shopIndex, gender)
     user_genderBc.unpersist()
+    activeUser_shopIndexes.unpersist()
 
     shopIndex_gender
       .map((_, 1)) // ((shopIndex, gender), 1)
       .reduceByKey(_ + _) // ((shopIndex, gender), count)
-      .map(x => (x._1._2, (x._1._1, x._2))) // (gender, (shopIndex, count))
+      .map{ case ((shopIndex, gender), count) => (gender, (shopIndex, count))}
       .groupByKey() // (gender, [(shopIndex, count)])
-      .mapValues(l => (l, l.map(_._2).sum)) // (gender, ([(shopIndex, count)], sumCount)
-      .mapValues(v => {
-        v._1
+      .mapValues(v => v
           .toList // [(shopIndex, count)]
           .sortBy(_._1) // Sort on shopIndex
-          .map(t => { // [(shopIndex, count)]
-            if(t._2 == 0) 0.0
-            else t._2.toDouble / v._2
-          })
-      })
-      .map((x: (Boolean, Iterable[Double])) => {
-        val label = if (x._1) 0 else 1
-        val features = x._2.toArray
-
-        new LabeledPoint(label, Vectors.dense(features))
-      })
+          .map { case (shopIndex, count) =>
+              if (count == 0) 0.0
+              else count.toDouble / v.map(_._2).sum
+          }
+      )
+      .map{ case (gender, counts) => new LabeledPoint(
+          label = if (gender) 0 else 1,
+          features = Vectors.dense(counts.toArray))
+      }
   }
 }
